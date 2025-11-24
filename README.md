@@ -287,6 +287,7 @@ Winglish-bot/
 - [mvp-scope.md](docs/guides/mvp-scope.md) - **🚀 MVP（最小実行可能製品）の範囲定義**
 - [vocabulary-notebook-feature.md](docs/guides/vocabulary-notebook-feature.md) - **📚 単語帳機能の設計：Discord上で単語帳を作成・管理**
 - [vocabulary-selection-and-system-notebooks.md](docs/guides/vocabulary-selection-and-system-notebooks.md) - **🔍 単語選択機能とシステム推奨単語帳：検索方法とターゲット1900など**
+- [testing-notebook-feature.md](docs/guides/testing-notebook-feature.md) - **🧪 単語帳機能のテスト手順：Phase 1の動作確認方法**
 - [user-problem-analysis.md](docs/guides/user-problem-analysis.md) - **🤔 ユーザー課題分析：単語帳機能は本当に必要なのか？**
 - [system-notebooks-data-source.md](docs/guides/system-notebooks-data-source.md) - **📊 システム推奨単語帳のデータソース：既存NGSLデータを使用**
 - [vocabulary-vs-notebook-explanation.md](docs/guides/vocabulary-vs-notebook-explanation.md) - **🔍 単語と単語帳の違い：概念的な説明**
