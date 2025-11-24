@@ -1,9 +1,6 @@
 # main.py
-import logging
 import sys
 from typing import Any
-import os
-from datetime import datetime
 
 try:
     import discord
@@ -12,18 +9,15 @@ except ImportError:
     print("❌ discord.py がインストールされていません。`pip install -r requirements.txt` を実行してください。")
     sys.exit(1)
 
-from config import DISCORD_TOKEN, TEST_GUILD_ID, validate_required_env
-from db import init_db, close_db
+from config import DISCORD_TOKEN, TEST_GUILD_ID, LOG_LEVEL, LOG_FILE, validate_required_env
+from db import init_db, close_db, get_db_manager
 from utils import info_embed
 from cogs.menu import MenuView
+from logger_config import setup_logging, get_logger
 
 # --- ログ設定 ---
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger('winglish')
+setup_logging(log_level=LOG_LEVEL, log_file=LOG_FILE)
+logger = get_logger('winglish')
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -35,7 +29,10 @@ class WinglishBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         try:
-            await init_db()
+            # DatabaseManagerの初期化
+            db_manager = get_db_manager()
+            await db_manager.initialize()
+            await init_db()  # スキーマ適用
             logger.info("✅ データベース初期化完了")
         except Exception as e:
             logger.critical(f"❌ データベース初期化に失敗しました: {e}", exc_info=True)

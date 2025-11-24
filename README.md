@@ -64,6 +64,10 @@ DIFY_API_KEY_ANSWER=app-yyyyyyyy
 DIFY_ENDPOINT_RUN=https://api.dify.ai/v1/workflows/run
 DIFY_ENDPOINT_CHAT=https://api.dify.ai/v1/chat-messages
 
+# ロギング（オプション）
+LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_FILE=logs/winglish.log  # ログファイルのパス（省略時はコンソール出力のみ）
+
 # Data（オプション）
 WORDS_CSV_PATH=data/All-words-modified_2025-10-29_08-31-22.csv
 ```

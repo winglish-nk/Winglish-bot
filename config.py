@@ -16,6 +16,10 @@ DIFY_API_KEY_QUESTION = os.getenv("DIFY_API_KEY_QUESTION")
 DIFY_API_KEY_ANSWER = os.getenv("DIFY_API_KEY_ANSWER")
 TEST_GUILD_ID = os.getenv("TEST_GUILD_ID")
 
+# ロギング設定
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_FILE = os.getenv("LOG_FILE")  # 例: "logs/winglish.log"
+
 
 def validate_required_env() -> None:
     """

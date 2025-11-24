@@ -12,4 +12,8 @@ data/All-words-modified_2025-10-29_08-31-22.csv
 htmlcov/
 .tox/
 *.cover
-.hypothesis/
+.hypothesis
+
+# Logs
+logs/
+*.log/
