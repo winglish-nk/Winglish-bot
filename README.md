@@ -284,6 +284,7 @@ Winglish-bot/
 ## 関連ドキュメント
 
 ### ガイド類 (`docs/guides/`)
+- [content-strategy.md](docs/guides/content-strategy.md) - **ユーザー視点でのコンテンツ戦略とUX設計**
 - [environment-and-error-handling.md](docs/guides/environment-and-error-handling.md) - 環境変数管理とエラーハンドリングの詳細
 - [repository-migration.md](docs/guides/repository-migration.md) - リポジトリ移行とPAT利用の手順
 - [roadmap.md](docs/guides/roadmap.md) - 今後の改善アイデアと優先タスク
