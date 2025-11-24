@@ -71,9 +71,19 @@ class WinglishBot(commands.Bot):
                 except Exception as clear_error:
                     logger.warning(f"⚠️ コマンドクリア時にエラー（無視して続行）: {clear_error}")
                 
-                synced_commands = await self.tree.sync(guild=guild)
-                logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
-                logger.info(f"📊 同期されたコマンド数（Discord返り値）: {len(synced_commands)}")
+                try:
+                    synced_commands = await self.tree.sync(guild=guild)
+                    logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
+                    logger.info(f"📊 同期されたコマンド数（Discord返り値）: {len(synced_commands)}")
+                    
+                    # 同期が成功したかどうかを確認
+                    if len(synced_commands) == 0 and len(commands_before) > 0:
+                        logger.warning("⚠️ 警告: 同期対象のコマンドがあるのに、Discord返り値が空です")
+                        logger.warning("⚠️ これは、Discord APIへの同期が実際には失敗している可能性があります")
+                        logger.warning("⚠️ しかし、既存コマンドを更新する場合は空が返されることもあります")
+                except discord.HTTPException as sync_error:
+                    logger.error(f"❌ スラッシュコマンド同期中にHTTPエラー: {sync_error.status} - {sync_error.text}")
+                    raise
                 
                 # tree.sync()の戻り値が空の場合があるため、同期前のコマンドリストを使用して確認
                 # 同期が成功していれば、同期前のコマンドがDiscordに登録されているはず
