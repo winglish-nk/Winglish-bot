@@ -11,7 +11,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 # ==== ENV ====
-DIFY_ENDPOINT_RUN = os.getenv("DIFY_ENDPOINT_RUN", "https://api.dify.ai/v1/workflows/run  ")
+DIFY_ENDPOINT_RUN = os.getenv("DIFY_ENDPOINT_RUN", "https://api.dify.ai/v1/workflows/run").strip()
 
 # 別アプリ（App）で運用している想定：Question用とAnswer用でキーを分離
 DIFY_API_KEY_QUESTION = os.getenv("DIFY_API_KEY_QUESTION")  # app-xxxxxxxx (Winglish_reading_Question)
