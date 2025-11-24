@@ -448,11 +448,9 @@ class Notebook(commands.Cog):
                 batch_id = str(uuid.uuid4())
                 
                 view = VocabSessionView(batch_id, items)
-                embed = discord.Embed(
-                    title=f"英単語 10問 - {notebook_name}",
-                    description=f"単語帳「{notebook_name}」から{len(items)}問を出題します。"
-                )
-                await safe_edit(interaction, embed=embed, view=None)
+                # vocab.pyのstart_tenと同じパターン：最初にembedだけ送信してから、send_currentで最初の問題を表示
+                initial_embed = discord.Embed(title=f"英単語 10問 - {notebook_name}")
+                await safe_edit(interaction, embed=initial_embed, view=None, content=None)
                 await view.send_current(interaction)
                 
                 # セッションバッチを記録
