@@ -36,7 +36,22 @@
 ## 改善の詳細
 
 各改善の詳細については、以下のドキュメントを参照してください：
-- `IMPROVEMENTS_BENEFITS.md` - 改善による効果
-- `IMPROVEMENTS_EXAMPLES.md` - 改善前後のコード比較
+- `docs/guides/IMPROVEMENTS_BENEFITS.md` - 改善による効果
+- `docs/guides/IMPROVEMENTS_EXAMPLES.md` - 改善前後のコード比較
 - `SECURITY_CHECKLIST.md` - セキュリティ対策の詳細
+
+---
+
+## [未リリース] 最新の変更
+
+### 改善
+- Lintワークフローの追加と安定化（ruff、mypy）
+- ドキュメントの整理（`docs/guides/`配下に統合）
+- READMEの関連ドキュメントセクションを整理・更新
+
+### 変更
+- ドキュメントファイルを`docs/guides/`配下に移動
+  - `IMPROVEMENTS_BENEFITS.md` → `docs/guides/IMPROVEMENTS_BENEFITS.md`
+  - `IMPROVEMENTS_EXAMPLES.md` → `docs/guides/IMPROVEMENTS_EXAMPLES.md`
+  - `DB_USAGE_GUIDE.md` → `docs/guides/DB_USAGE_GUIDE.md`
 

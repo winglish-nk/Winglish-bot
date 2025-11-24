@@ -179,7 +179,7 @@ async with db_manager.acquire() as conn:
     result = await conn.fetch("SELECT * FROM users WHERE user_id = $1", user_id)
 ```
 
-詳細は [DB_USAGE_GUIDE.md](DB_USAGE_GUIDE.md) を参照してください。
+詳細は [docs/guides/DB_USAGE_GUIDE.md](docs/guides/DB_USAGE_GUIDE.md) を参照してください。
 
 ### エラーハンドリング
 
@@ -215,7 +215,7 @@ except Exception as e:
 - ✅ **テストコード**: pytestによるテスト環境の構築
 - ✅ **ロギング**: 構造化されたログで問題の早期発見
 
-詳細は [IMPROVEMENTS_BENEFITS.md](IMPROVEMENTS_BENEFITS.md) を参照してください。
+詳細は [docs/guides/IMPROVEMENTS_BENEFITS.md](docs/guides/IMPROVEMENTS_BENEFITS.md) を参照してください。
 
 ---
 
@@ -283,13 +283,19 @@ Winglish-bot/
 
 ## 関連ドキュメント
 
-- [DB_USAGE_GUIDE.md](DB_USAGE_GUIDE.md) - データベース接続の使用方法
+### ガイド類 (`docs/guides/`)
+- [environment-and-error-handling.md](docs/guides/environment-and-error-handling.md) - 環境変数管理とエラーハンドリングの詳細
+- [repository-migration.md](docs/guides/repository-migration.md) - リポジトリ移行とPAT利用の手順
+- [roadmap.md](docs/guides/roadmap.md) - 今後の改善アイデアと優先タスク
+- [DB_USAGE_GUIDE.md](docs/guides/DB_USAGE_GUIDE.md) - データベース接続の使用方法
+- [IMPROVEMENTS_BENEFITS.md](docs/guides/IMPROVEMENTS_BENEFITS.md) - 改善による効果の説明
+- [IMPROVEMENTS_EXAMPLES.md](docs/guides/IMPROVEMENTS_EXAMPLES.md) - 改善前後のコード比較
+
+### その他
 - [tests/README.md](tests/README.md) - テストの実行方法
-- [IMPROVEMENTS_BENEFITS.md](IMPROVEMENTS_BENEFITS.md) - 改善による効果の説明
-- [IMPROVEMENTS_EXAMPLES.md](IMPROVEMENTS_EXAMPLES.md) - 改善前後のコード比較
-- [docs/guides/environment-and-error-handling.md](docs/guides/environment-and-error-handling.md) - 環境変数管理とエラーハンドリングの詳細
-- [docs/guides/repository-migration.md](docs/guides/repository-migration.md) - リポジトリ移行とPAT利用の手順
-- [docs/guides/roadmap.md](docs/guides/roadmap.md) - 今後の改善アイデアと優先タスク
+- [CONTRIBUTING.md](CONTRIBUTING.md) - コントリビューションガイドライン
+- [SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md) - セキュリティチェックリスト
+- [CHANGELOG.md](CHANGELOG.md) - 変更履歴
 
 ---
 
