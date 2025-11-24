@@ -63,14 +63,6 @@ class WinglishBot(commands.Bot):
                 guild = discord.Object(id=int(TEST_GUILD_ID))
                 logger.info(f"📡 テストギルド ({TEST_GUILD_ID}) に同期します...")
                 
-                # 一度クリアしてから同期（強制的に再同期）
-                try:
-                    # 既存のコマンドをクリア（エラーが無視される場合があるため、try-exceptで囲む）
-                    self.tree.clear_commands(guild=guild)
-                    logger.info("🔄 既存のコマンドをクリアしました")
-                except Exception as clear_error:
-                    logger.warning(f"⚠️ コマンドクリア時にエラー（無視して続行）: {clear_error}")
-                
                 try:
                     synced_commands = await self.tree.sync(guild=guild)
                     logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
