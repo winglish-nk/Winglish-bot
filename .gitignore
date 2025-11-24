@@ -5,3 +5,11 @@ venv/
 .env.local
 .DS_Store
 data/All-words-modified_2025-10-29_08-31-22.csv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+.hypothesis/
