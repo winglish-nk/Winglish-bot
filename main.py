@@ -52,7 +52,6 @@ class WinglishBot(commands.Bot):
         try:
             if TEST_GUILD_ID:
                 guild = discord.Object(id=int(TEST_GUILD_ID))
-                self.tree.copy_global_to(guild=guild)
                 await self.tree.sync(guild=guild)
                 logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
             else:
