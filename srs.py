@@ -1,6 +1,31 @@
-import datetime
+from __future__ import annotations
 
-def update_srs(easiness, interval_days, consecutive_correct, q):
+import datetime
+from typing import Tuple, Union
+
+
+def update_srs(
+    easiness: Union[float, int],
+    interval_days: Union[float, int],
+    consecutive_correct: Union[int, None],
+    q: Union[int, float]
+) -> Tuple[float, float, int, datetime.date]:
+    """
+    SM-2アルゴリズムに基づいてSRS（Spaced Repetition System）の状態を更新する
+    
+    Args:
+        easiness: 現在の容易度係数（デフォルト: 2.5）
+        interval_days: 現在の復習間隔（日数）
+        consecutive_correct: 連続正解回数（Noneの場合は0として扱う）
+        q: 品質スコア（0-5、5が最も良い）
+    
+    Returns:
+        (新しいeasiness, 新しいinterval_days, 新しいconsecutive_correct, 次の復習日)のタプル
+    
+    Note:
+        - q < 3 の場合、復習間隔が1日にリセットされ、連続正解回数が0にリセットされる
+        - q >= 3 の場合、easinessが更新され、復習間隔が計算される
+    """
     e = float(easiness)
     i = float(interval_days)
     c = int(consecutive_correct or 0)

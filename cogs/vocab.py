@@ -1,26 +1,46 @@
-import discord, random, uuid
-from discord.ext import commands
-from db import get_pool
-from srs import update_srs
-from error_handler import ErrorHandler
+from __future__ import annotations
+
 import logging
+import uuid
+from typing import Any, Optional
+
+import discord
+from discord.ext import commands
+
+from db import get_pool
+from error_handler import ErrorHandler
+from srs import update_srs
 
 logger = logging.getLogger('winglish.vocab')
 
 # ------------------------
 # 共通ユーティリティ
 # ------------------------
-async def ensure_defer(interaction: discord.Interaction):
+async def ensure_defer(interaction: discord.Interaction) -> None:
     """未応答ならdeferする（二重deferを回避）"""
     await ErrorHandler.safe_defer(interaction)
 
-async def safe_edit(interaction: discord.Interaction, **kwargs):
-    """このインタラクションのメッセージを安全に編集する"""
+
+async def safe_edit(
+    interaction: discord.Interaction,
+    embed: Optional[discord.Embed] = None,
+    view: Optional[discord.ui.View] = None,
+    content: Optional[str] = None
+) -> None:
+    """
+    このインタラクションのメッセージを安全に編集する
+    
+    Args:
+        interaction: Discord Interaction
+        embed: 編集後のEmbed（オプション）
+        view: 編集後のView（オプション）
+        content: 編集後のコンテンツ（オプション）
+    """
     await ErrorHandler.safe_edit_message(
         interaction,
-        embed=kwargs.get('embed'),
-        view=kwargs.get('view'),
-        content=kwargs.get('content')
+        embed=embed,
+        view=view,
+        content=content
     )
 
 # ------------------------
@@ -52,14 +72,14 @@ class VocabMenuView(discord.ui.View):
 # 10問提示ビュー（1問ごとにEmbed更新）
 # ------------------------
 class VocabSessionView(discord.ui.View):
-    def __init__(self, batch_id, items):
+    def __init__(self, batch_id: str, items: list[dict[str, Any]]) -> None:
         super().__init__(timeout=180)
-        self.batch_id = batch_id
-        self.items = items
-        self.index = 0
-        self.busy = False  # 多重クリック防止
+        self.batch_id: str = batch_id
+        self.items: list[dict[str, Any]] = items
+        self.index: int = 0
+        self.busy: bool = False  # 多重クリック防止
 
-    async def send_current(self, interaction: discord.Interaction):
+    async def send_current(self, interaction: discord.Interaction) -> None:
         if self.index >= len(self.items):
             await safe_edit(
                 interaction,
@@ -95,11 +115,11 @@ class VocabSessionView(discord.ui.View):
 # Cog本体
 # ------------------------
 class Vocab(commands.Cog):
-    def __init__(self, bot): 
-        self.bot = bot
+    def __init__(self, bot: commands.Bot) -> None: 
+        self.bot: commands.Bot = bot
 
     # 直近メッセージのボタンを無効化（見た目で連打抑止）
-    async def _disable_current_buttons(self, interaction: discord.Interaction):
+    async def _disable_current_buttons(self, interaction: discord.Interaction) -> None:
         try:
             new_view = discord.ui.View(timeout=0)
             for row in interaction.message.components:
@@ -140,7 +160,7 @@ class Vocab(commands.Cog):
             await self.weak_test(interaction)
 
     # 10問スタート
-    async def start_ten(self, interaction: discord.Interaction):
+    async def start_ten(self, interaction: discord.Interaction) -> None:
         try:
             user_id = str(interaction.user.id)
             await ensure_defer(interaction)
@@ -188,7 +208,7 @@ class Vocab(commands.Cog):
             )
 
     # 解答処理（覚えた/忘れそう）
-    async def handle_answer(self, interaction: discord.Interaction, cid: str):
+    async def handle_answer(self, interaction: discord.Interaction, cid: str) -> None:
         await ensure_defer(interaction)
 
         # セッション取得＆多重実行ガード
@@ -262,7 +282,7 @@ class Vocab(commands.Cog):
                 view.busy = False
 
     # 明示的な「次へ」
-    async def next_item(self, interaction: discord.Interaction):
+    async def next_item(self, interaction: discord.Interaction) -> None:
         await ensure_defer(interaction)
         view = getattr(self.bot, "_vocab_session", None)
         if isinstance(view, VocabSessionView):
@@ -279,7 +299,7 @@ class Vocab(commands.Cog):
             await self.start_ten(interaction)
 
     # 前々回テスト（プレースホルダ）
-    async def prevprev_test(self, interaction: discord.Interaction):
+    async def prevprev_test(self, interaction: discord.Interaction) -> None:
         try:
             await ensure_defer(interaction)
             user_id = str(interaction.user.id)
@@ -323,7 +343,7 @@ class Vocab(commands.Cog):
             )
 
     # 苦手テスト（候補表示）
-    async def weak_test(self, interaction: discord.Interaction):
+    async def weak_test(self, interaction: discord.Interaction) -> None:
         try:
             await ensure_defer(interaction)
             user_id = str(interaction.user.id)

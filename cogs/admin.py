@@ -10,9 +10,9 @@ from error_handler import ErrorHandler
 
 logger = logging.getLogger('winglish.admin')
 
-def is_manager():
+def is_manager() -> app_commands.check:
     """管理用ガード（管理者orManage Channels権限）"""
-    def predicate(inter: discord.Interaction):
+    def predicate(inter: discord.Interaction) -> bool:
         perms = inter.user.guild_permissions
         return perms.administrator or perms.manage_channels
     return app_commands.check(lambda i: predicate(i))
@@ -32,8 +32,8 @@ GUILD_CATEGORY_NAME = "Winglish｜個人学習"
 class WinglishAdmin(commands.Cog):
     """Winglish 運用・復旧コマンド"""
 
-    def __init__(self, bot: commands.Bot):
-        self.bot = bot
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot: commands.Bot = bot
 
     group = app_commands.Group(name="winglish", description="Winglish の管理/復旧用コマンド")
 

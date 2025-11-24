@@ -1,11 +1,17 @@
+from __future__ import annotations
+
+import logging
+from typing import Optional
+
 import discord
 from discord.ext import commands
+
 from db import get_pool
-from utils import info_embed
 from error_handler import ErrorHandler
-import logging
+from utils import info_embed
 
 logger = logging.getLogger('winglish.svocm')
+
 
 class SvocmModal(discord.ui.Modal, title="SVOCM 解答"):
     s = discord.ui.TextInput(label="S", required=True)
@@ -15,12 +21,12 @@ class SvocmModal(discord.ui.Modal, title="SVOCM 解答"):
     c = discord.ui.TextInput(label="C", required=False)
     m = discord.ui.TextInput(label="M", required=False)
 
-    def __init__(self, sentence_en: str, item_id: int):
+    def __init__(self, sentence_en: str, item_id: int) -> None:
         super().__init__()
-        self.sentence_en = sentence_en
-        self.item_id = item_id
+        self.sentence_en: str = sentence_en
+        self.item_id: int = item_id
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         try:
             await interaction.response.defer(thinking=True, ephemeral=False)
 
@@ -67,19 +73,21 @@ class SvocmModal(discord.ui.Modal, title="SVOCM 解答"):
             )
 
 class Svocm(commands.Cog):
-    def __init__(self, bot): self.bot = bot
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot: commands.Bot = bot
 
     @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        if interaction.type != discord.InteractionType.component: return
-        cid = interaction.data.get("custom_id","")
+    async def on_interaction(self, interaction: discord.Interaction) -> None:
+        if interaction.type != discord.InteractionType.component:
+            return
+        cid = interaction.data.get("custom_id", "")
         if cid.startswith("svocm:pattern:"):
             pattern = int(cid.split(":")[-1])
             await self.show_item(interaction, pattern=pattern)
         elif cid == "svocm:random":
             await self.show_item(interaction, pattern=None)
 
-    async def show_item(self, interaction: discord.Interaction, pattern: int|None):
+    async def show_item(self, interaction: discord.Interaction, pattern: Optional[int]) -> None:
         try:
             try:
                 pool = await get_pool()
@@ -116,7 +124,7 @@ class Svocm(commands.Cog):
             view = discord.ui.View()
             modal = SvocmModal(sentence, row["item_id"])
             # モーダル起動ボタン
-            async def on_answer(i: discord.Interaction):
+            async def on_answer(i: discord.Interaction) -> None:
                 try:
                     await i.response.send_modal(modal)
                 except Exception as modal_error:
