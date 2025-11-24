@@ -193,12 +193,12 @@ class Vocab(commands.Cog):
             await safe_edit(interaction, embed=discord.Embed(title="英単語 10問"), view=None)
             await view.send_current(interaction)
 
-        db_manager = get_db_manager()
-        async with db_manager.acquire() as conn:
-            await conn.execute(
-                "INSERT INTO session_batches(user_id, module, batch_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
-                user_id, "vocab", batch_id
-            )
+            db_manager = get_db_manager()
+            async with db_manager.acquire() as conn:
+                await conn.execute(
+                    "INSERT INTO session_batches(user_id, module, batch_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
+                    user_id, "vocab", batch_id
+                )
 
             self.bot._vocab_session = view
         except Exception as e:
