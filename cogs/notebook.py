@@ -97,7 +97,7 @@ class Notebook(commands.Cog):
             if not notebooks:
                 await interaction.response.send_message(
                     "📚 単語帳がまだありません。`/notebook_create` で作成しましょう！\n"
-                    "または `/notebook_list_system` でシステム推奨単語帳を確認できます。",
+                    "または `/notebook_system` でシステム推奨単語帳を確認できます。",
                     ephemeral=True
                 )
                 return
@@ -128,10 +128,10 @@ class Notebook(commands.Cog):
             )
 
     @discord.app_commands.command(
-        name="notebook_list_system",
+        name="notebook_system",
         description="システム推奨単語帳の一覧を表示"
     )
-    async def notebook_list_system(self, interaction: discord.Interaction) -> None:
+    async def notebook_system(self, interaction: discord.Interaction) -> None:
         """システム推奨単語帳一覧を表示"""
         try:
             db_manager = get_db_manager()
@@ -179,7 +179,7 @@ class Notebook(commands.Cog):
             await ErrorHandler.handle_interaction_error(
                 interaction,
                 e,
-                log_context="notebook.notebook_list_system"
+                log_context="notebook.notebook_system"
             )
 
     @discord.app_commands.command(
