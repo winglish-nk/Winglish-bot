@@ -295,17 +295,25 @@ async def notebook_add(
 
 ### 💡 システム推奨単語帳とは
 
-システムが全ユーザーに提供する標準的な単語帳。例:
-- 「NGSL Level 1」（最頻出語）
-- 「NGSL Level 2」
-- 「NGSL Level 3」
-- 「ターゲット1900」（大学受験頻出語）
+**既存のNGSLデータ（wordsテーブル）から単語を選んで作る標準的な単語帳**
 
-**特徴:**
+システムが全ユーザーに提供する標準的な単語帳。例:
+- 「NGSL Level 1」（wordsテーブルのlevel=1から選ぶ）
+- 「NGSL Level 2」（wordsテーブルのlevel=2から選ぶ）
+- 「NGSL Level 3」（wordsテーブルのlevel=3から選ぶ）
+- 「ターゲット1900」（既存のNGSLデータから1900語を選ぶ。イメージ名）
+
+**重要な前提:**
+- ✅ **既存のwordsテーブル（NGSLの3800語）から単語を選ぶ**
+- ✅ 新しく単語データを追加する必要はない
+- ✅ wordsテーブルの`level`フィールドを使って分類
 - ✅ 全ユーザーが同じ単語帳を利用できる
 - ✅ システム管理者が作成・管理
 - ✅ ユーザーは「この単語帳をフォローする」だけで使える
-- ✅ ユーザーは削除できないが、学習は自由にできる
+
+**注意:**
+- 「ターゲット1900」という名前は**イメージ**で、実際には既存のNGSLデータから適切に選んだ単語帳
+- 新しい単語データは追加しない（wordsテーブルにある3800語のみを使用）
 
 ---
 
@@ -551,49 +559,78 @@ async def start_from_notebook(
 
 ### 🎯 システム推奨単語帳の作成スクリプト
 
+**重要: 既存のwordsテーブル（NGSLの3800語）から単語を選ぶ**
+
 ```python
 # scripts/create_system_notebooks.py
 
 async def create_system_notebooks():
-    """システム推奨単語帳を作成"""
+    """
+    システム推奨単語帳を作成
+    
+    注意: 既存のwordsテーブル（NGSLの3800語）から単語を選ぶ
+    新しい単語データは追加しない
+    """
     db_manager = get_db_manager()
     await db_manager.initialize()
     
     async with db_manager.acquire() as conn:
-        # NGSL Level 1を作成
+        # NGSL Level 1を作成（wordsテーブルのlevel=1から選ぶ）
         notebook_id = await conn.fetchval("""
             INSERT INTO vocabulary_notebooks (user_id, name, description, is_system, system_type)
-            VALUES (NULL, 'NGSL Level 1', 'NGSL最頻出語（約1000語）', TRUE, 'ngsl_level1')
+            VALUES (NULL, 'NGSL Level 1', 'NGSL最頻出語（wordsテーブルのlevel=1から選択）', TRUE, 'ngsl_level1')
             RETURNING notebook_id
         """)
         
-        # Level 1の単語を追加
+        # Level 1の単語を追加（既存のwordsテーブルから）
         await conn.execute("""
             INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
-            SELECT $1, word_id, row_number() OVER (ORDER BY level, word_id) as order_index
+            SELECT $1, word_id, row_number() OVER (ORDER BY word_id) as order_index
             FROM words 
             WHERE level = 1 
-            ORDER BY level, word_id
-            LIMIT 1000
+            ORDER BY word_id
         """, notebook_id)
         
-        # ターゲット1900を作成（例：level 1と2を組み合わせ）
-        notebook_id_target = await conn.fetchval("""
+        # NGSL Level 2を作成（wordsテーブルのlevel=2から選ぶ）
+        notebook_id_2 = await conn.fetchval("""
             INSERT INTO vocabulary_notebooks (user_id, name, description, is_system, system_type)
-            VALUES (NULL, 'ターゲット1900', '大学受験頻出語1900語', TRUE, 'target1900')
+            VALUES (NULL, 'NGSL Level 2', 'NGSL中級語（wordsテーブルのlevel=2から選択）', TRUE, 'ngsl_level2')
             RETURNING notebook_id
         """)
         
         await conn.execute("""
             INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
+            SELECT $1, word_id, row_number() OVER (ORDER BY word_id) as order_index
+            FROM words 
+            WHERE level = 2 
+            ORDER BY word_id
+        """, notebook_id_2)
+        
+        # 「ターゲット1900」を作成（既存のNGSLデータから1900語を選ぶ。イメージ名）
+        # 例: level 1と2を組み合わせて1900語
+        notebook_id_target = await conn.fetchval("""
+            INSERT INTO vocabulary_notebooks (user_id, name, description, is_system, system_type)
+            VALUES (NULL, 'ターゲット1900', '大学受験頻出語（既存NGSLデータから1900語を選択）', TRUE, 'target1900')
+            RETURNING notebook_id
+        """)
+        
+        # 既存のwordsテーブルから1900語を選ぶ（level順に）
+        await conn.execute("""
+            INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
             SELECT $1, word_id, row_number() OVER (ORDER BY level, word_id) as order_index
             FROM words 
-            WHERE level IN (1, 2)
+            WHERE level IN (1, 2)  -- または適切な条件で選ぶ
             ORDER BY level, word_id
             LIMIT 1900
         """, notebook_id_target)
+        
+        # 実際の単語数を確認
+        count = await conn.fetchval("""
+            SELECT COUNT(*) FROM system_notebook_words WHERE notebook_id = $1
+        """, notebook_id_target)
+        print(f"✅ 「ターゲット1900」に{count}語を追加しました（既存のwordsテーブルから）")
     
-    print("✅ システム推奨単語帳を作成しました")
+    print("✅ システム推奨単語帳を作成しました（既存のNGSLデータを使用）")
 ```
 
 ---
