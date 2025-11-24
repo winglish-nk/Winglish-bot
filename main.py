@@ -64,25 +64,34 @@ class WinglishBot(commands.Bot):
                 logger.info(f"📡 テストギルド ({TEST_GUILD_ID}) に同期します...")
                 synced_commands = await self.tree.sync(guild=guild)
                 logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
-                logger.info(f"📊 同期されたコマンド数（Discord）: {len(synced_commands)}")
+                logger.info(f"📊 同期されたコマンド数（Discord返り値）: {len(synced_commands)}")
                 
-                if synced_commands:
-                    for cmd in sorted(synced_commands, key=lambda x: x.name):
+                # tree.sync()の戻り値が空の場合があるため、実際に登録されているコマンドを確認
+                actual_commands = list(self.tree.get_commands(guild=guild))
+                logger.info(f"📊 実際に登録されているコマンド数: {len(actual_commands)}")
+                
+                if actual_commands:
+                    for cmd in sorted(actual_commands, key=lambda x: x.name):
                         logger.info(f"  ✅ /{cmd.name}")
                     
                     # sys_notebooksが含まれているか特別に確認
-                    cmd_names = [cmd.name for cmd in synced_commands]
+                    cmd_names = [cmd.name for cmd in actual_commands]
                     if 'sys_notebooks' in cmd_names:
                         logger.info("="*60)
-                        logger.info("✅ sys_notebooksコマンドが同期されています！")
+                        logger.info("✅ sys_notebooksコマンドが登録されています！")
                         logger.info("="*60)
                     else:
                         logger.warning("="*60)
-                        logger.warning("⚠️ sys_notebooksコマンドが同期されていません")
-                        logger.warning(f"同期されたコマンド一覧: {', '.join(cmd_names)}")
+                        logger.warning("⚠️ sys_notebooksコマンドが登録されていません")
+                        logger.warning(f"登録されているコマンド一覧: {', '.join(cmd_names)}")
                         logger.warning("="*60)
                 else:
-                    logger.warning("⚠️ 同期されたコマンドが0個です")
+                    logger.warning("⚠️ 登録されているコマンドが0個です")
+                    
+                if synced_commands:
+                    logger.info(f"📊 Discord APIから返された同期済みコマンド数: {len(synced_commands)}")
+                    for cmd in sorted(synced_commands, key=lambda x: x.name):
+                        logger.info(f"  📡 /{cmd.name} (Discord API返り値)")
             else:
                 logger.info("📡 グローバル同期します...")
                 synced_commands = await self.tree.sync()
