@@ -50,23 +50,19 @@ class WinglishBot(commands.Bot):
         
         #--- スラッシュコマンド同期 ---
         try:
-            # 同期前に登録されているコマンドを確認
-            commands_before = self.tree.get_commands()
-            logger.info(f"📊 同期前のコマンド数: {len(commands_before)}")
-            for cmd in sorted(commands_before, key=lambda x: x.name):
-                logger.info(f"  - /{cmd.name}")
-            
             if TEST_GUILD_ID:
                 guild = discord.Object(id=int(TEST_GUILD_ID))
-                synced = await self.tree.sync(guild=guild)
+                synced_commands = await self.tree.sync(guild=guild)
                 logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
-                logger.info(f"📊 同期されたコマンド数: {len(synced)}")
-                for cmd in sorted(synced, key=lambda x: x.name):
-                    logger.info(f"  - /{cmd.name}")
+                logger.info(f"📊 同期されたコマンド数: {len(synced_commands)}")
+                for cmd in sorted(synced_commands, key=lambda x: x.name):
+                    logger.info(f"  ✅ /{cmd.name}")
             else:
-                synced = await self.tree.sync()
+                synced_commands = await self.tree.sync()
                 logger.info("✅ スラッシュコマンド同期完了（グローバル）")
-                logger.info(f"📊 同期されたコマンド数: {len(synced)}")
+                logger.info(f"📊 同期されたコマンド数: {len(synced_commands)}")
+                for cmd in sorted(synced_commands, key=lambda x: x.name):
+                    logger.info(f"  ✅ /{cmd.name}")
         except ValueError as e:
             logger.error(f"❌ TEST_GUILD_ID が無効です: {e}")
         except discord.HTTPException as e:
