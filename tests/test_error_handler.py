@@ -40,8 +40,9 @@ class TestErrorHandler:
         
         # エラーメッセージが送信されることを確認
         mock_interaction.response.send_message.assert_called_once()
-        call_args = mock_interaction.response.send_message.call_args
-        assert "権限" in call_args[1]["content"] or "権限" in str(call_args)
+        args, kwargs = mock_interaction.response.send_message.call_args
+        sent_message = args[0] if args else kwargs.get("content", "")
+        assert "権限" in sent_message, "権限不足メッセージが送信されるべき"
 
     @pytest.mark.asyncio
     async def test_handle_interaction_error_database_error(self, mock_interaction):
