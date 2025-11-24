@@ -3,7 +3,6 @@
 各Cogで統一されたエラー処理を提供する
 """
 import logging
-import traceback
 from typing import Optional, Callable, Awaitable
 
 import discord

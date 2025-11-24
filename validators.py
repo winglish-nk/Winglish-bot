@@ -59,7 +59,7 @@ def validate_svocm_answer(
             field_upper = field_value.upper()
             for pattern in dangerous_patterns:
                 if re.search(pattern, field_upper, re.IGNORECASE):
-                    return False, f"無効な文字列が検出されました。"
+                    return False, "無効な文字列が検出されました。"
     
     return True, None
 

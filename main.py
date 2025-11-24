@@ -11,7 +11,6 @@ except ImportError:
 
 from config import DISCORD_TOKEN, TEST_GUILD_ID, LOG_LEVEL, LOG_FILE, validate_required_env
 from db import init_db, close_db, get_db_manager
-from utils import info_embed
 from cogs.menu import MenuView
 from logger_config import setup_logging, get_logger
 

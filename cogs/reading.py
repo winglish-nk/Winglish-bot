@@ -116,7 +116,8 @@ class ReadingCog(commands.Cog):
         await self._send_question(ctx, session, number=1)
 
     async def _send_question(self, ctx, session, number: int):
-        q_text = session[f"q{number}_text"]; choices = session[f"q{number}_choices"]
+        q_text = session[f"q{number}_text"]
+        choices = session[f"q{number}_choices"]
         emb_q = discord.Embed(title=f"Q{number}", description=q_text)
 
         # 選択肢本文をEmbedに表示

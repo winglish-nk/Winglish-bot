@@ -1,9 +1,7 @@
 """
 SRS（Spaced Repetition System）のテスト
 """
-from datetime import date, timedelta
-
-import pytest
+from datetime import date
 
 from srs import update_srs
 

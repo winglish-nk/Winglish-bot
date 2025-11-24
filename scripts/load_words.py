@@ -1,5 +1,11 @@
 # scripts/load_words.py  (schema-aligned, robust)
-import asyncio, os, csv, asyncpg, sys, traceback
+import asyncio
+import csv
+import os
+import sys
+import traceback
+
+import asyncpg
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -63,7 +69,7 @@ def row_to_params(row: dict):
     level_raw = (row.get("level") or "").strip()
     try:
         level = int(level_raw) if level_raw != "" else None
-    except:
+    except (ValueError, TypeError):
         level = None
 
     example_en = (row.get("example") or "").strip()

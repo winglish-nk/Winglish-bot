@@ -2,8 +2,6 @@
 設定管理のテスト
 """
 import os
-import sys
-from unittest.mock import patch
 
 import pytest
 

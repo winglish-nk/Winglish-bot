@@ -4,7 +4,7 @@
 import asyncpg
 import discord
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 from error_handler import ErrorHandler
 

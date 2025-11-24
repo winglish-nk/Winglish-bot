@@ -83,7 +83,7 @@ class SvocmModal(discord.ui.Modal, title="SVOCM 解答"):
                     await conn.execute("""
                       INSERT INTO study_logs(user_id, module, item_id, result)
                       VALUES($1,'svocm',$2,$3::jsonb)
-                    """, str(interaction.user.id), int(self.item_id), {"feedback": text})
+                    """, str(interaction.user.id), int(self.item_id), {"feedback": text, "payload": payload})
             except Exception as db_error:
                 error_msg = await ErrorHandler.handle_database_error(
                     db_error,

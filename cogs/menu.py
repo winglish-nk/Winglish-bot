@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
-
 import discord
 from discord.ext import commands
 
 from error_handler import ErrorHandler
-from utils import info_embed, main_menu_view
+from utils import info_embed
 
 logger = logging.getLogger('winglish.menu')
 

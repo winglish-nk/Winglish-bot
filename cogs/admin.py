@@ -205,8 +205,8 @@ class WinglishAdmin(commands.Cog):
         from db import get_db_manager
         db_manager = get_db_manager()
         async with db_manager.acquire() as conn:
-            n = await con.fetchval("SELECT COUNT(*) FROM words")
-            sample = await con.fetch("""
+            n = await conn.fetchval("SELECT COUNT(*) FROM words")
+            sample = await conn.fetch("""
                 SELECT word_id, word, jp, pos
                 FROM words ORDER BY word_id ASC LIMIT 5
             """)
@@ -248,7 +248,7 @@ class WinglishAdmin(commands.Cog):
         from db import get_db_manager
         db_manager = get_db_manager()
         async with db_manager.acquire() as conn:
-            await con.execute(
+            await conn.execute(
                 "INSERT INTO users(user_id, channel_id) VALUES($1,$2) "
                 "ON CONFLICT (user_id) DO UPDATE SET channel_id=$2",
                 str(member.id), str(ch.id)
