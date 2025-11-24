@@ -29,17 +29,44 @@ class SvocmModal(discord.ui.Modal, title="SVOCM 解答"):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         try:
             await interaction.response.defer(thinking=True, ephemeral=False)
+            
+            # 入力値の検証
+            from validators import validate_svocm_answer, sanitize_string
+            
+            is_valid, error_msg = validate_svocm_answer(
+                str(self.s),
+                str(self.v),
+                str(self.o1) if self.o1 else None,
+                str(self.o2) if self.o2 else None,
+                str(self.c) if self.c else None,
+                str(self.m) if self.m else None
+            )
+            
+            if not is_valid:
+                await interaction.followup.send(
+                    f"❌ {error_msg}",
+                    ephemeral=True
+                )
+                return
+            
+            # 入力値をサニタイズ
+            s_sanitized = sanitize_string(str(self.s))
+            v_sanitized = sanitize_string(str(self.v))
+            o1_sanitized = sanitize_string(str(self.o1)) if self.o1 else ""
+            o2_sanitized = sanitize_string(str(self.o2)) if self.o2 else ""
+            c_sanitized = sanitize_string(str(self.c)) if self.c else ""
+            m_sanitized = sanitize_string(str(self.m)) if self.m else ""
 
             payload = {
                 "inputs": {
                     "user_id": str(interaction.user.id),
                     "Question": self.sentence_en,
-                    "Answer_S": str(self.s),
-                    "Answer_V": str(self.v),
-                    "Answer_O1": str(self.o1),
-                    "Answer_O2": str(self.o2),
-                    "Answer_C": str(self.c),
-                    "Answer_M": str(self.m),
+                    "Answer_S": s_sanitized,
+                    "Answer_V": v_sanitized,
+                    "Answer_O1": o1_sanitized,
+                    "Answer_O2": o2_sanitized,
+                    "Answer_C": c_sanitized,
+                    "Answer_M": m_sanitized,
                     "question_id": str(self.item_id),
                     "training_type": "SVOCM"
                 },

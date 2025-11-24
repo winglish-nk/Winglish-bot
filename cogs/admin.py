@@ -53,9 +53,17 @@ class WinglishAdmin(commands.Cog):
     async def attach_menu(self, interaction: discord.Interaction, message_id: str):
         await interaction.response.defer(ephemeral=True)
         try:
+            from validators import validate_message_id
+            
+            is_valid, parsed_id, error_msg = validate_message_id(message_id)
+            if not is_valid:
+                await interaction.followup.send(f"❌ {error_msg}", ephemeral=True)
+                return
+            
             try:
-                msg = await interaction.channel.fetch_message(int(message_id))
+                msg = await interaction.channel.fetch_message(parsed_id)
             except ValueError:
+                # validate_message_idで既にチェック済みなので、ここに来ることは少ない
                 await interaction.followup.send("❌ メッセージIDが無効です。", ephemeral=True)
                 return
             except discord.NotFound:
