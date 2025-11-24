@@ -76,8 +76,65 @@ bot = WinglishBot()
 
 @bot.tree.command(name="start", description="Winglishを開始（個人鍵チャンネルにメニューを出します）")
 async def start_cmd(interaction: discord.Interaction):
+    """個人チャンネルを取得または作成し、メニューを送信"""
     await interaction.response.defer(ephemeral=True)
-    await interaction.followup.send("あなたの個人チャンネルにメニューを送ります。", ephemeral=True)
+    
+    try:
+        from cogs.menu import MenuView
+        from utils import info_embed
+        
+        # Onboarding Cogのインスタンスを取得
+        onboarding_cog = bot.get_cog('Onboarding')
+        if onboarding_cog is None:
+            logger.error("Onboarding Cogが見つかりません")
+            await interaction.followup.send(
+                "❌ エラーが発生しました。Botを再起動してください。",
+                ephemeral=True
+            )
+            return
+        
+        # 個人チャンネルを取得または作成
+        member = interaction.user
+        if not isinstance(member, discord.Member):
+            logger.warning(f"memberがdiscord.Memberではありません: {type(member)}")
+            await interaction.followup.send(
+                "❌ エラーが発生しました。サーバー内で実行してください。",
+                ephemeral=True
+            )
+            return
+        
+        logger.info(f"個人チャンネルを取得または作成: user={member.name} ({member.id})")
+        channel = await onboarding_cog.ensure_private_channel(member)
+        logger.info(f"個人チャンネル取得成功: {channel.name} ({channel.id})")
+        
+        # メニューを送信（既存チャンネルでも常に送信）
+        try:
+            await channel.send(
+                embed=info_embed("Winglish - 学習メニュー", "学習メニューを選んでください。"),
+                view=MenuView()
+            )
+            logger.info(f"メニューを送信しました: {channel.name}")
+        except Exception as send_error:
+            logger.error(f"メニュー送信エラー: {send_error}", exc_info=True)
+            await interaction.followup.send(
+                f"❌ メニューの送信に失敗しました: {send_error}",
+                ephemeral=True
+            )
+            return
+        
+        await interaction.followup.send(
+            f"✅ あなたの個人チャンネル <#{channel.id}> にメニューを送りました！",
+            ephemeral=True
+        )
+    except Exception as e:
+        logger.error(f"start_cmd エラー: {e}", exc_info=True)
+        error_msg = f"❌ エラーが発生しました: {str(e)}"
+        if len(error_msg) > 200:
+            error_msg = "❌ エラーが発生しました。管理者に連絡してください。"
+        await interaction.followup.send(
+            error_msg,
+            ephemeral=True
+        )
 
 # --- 実行 ---
 if __name__ == "__main__":
