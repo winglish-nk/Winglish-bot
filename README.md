@@ -10,8 +10,8 @@
 このBotはもともと、ノーコードツール **Bubble** 上で構築されていた「Winglish」を、  
 Discord 環境でも利用できるように再設計したものです。
 
-- **対象**：高校生〜大学生の英語学習者  
-- **目的**：インプット型学習を脱して、チャットベースのアウトプット型英語学習を実現  
+- **対象**：大学受験を目指す高校生  
+- **目的**：Discord上で大学受験英語（英単語・英文解釈・長文読解）を効率的に学習  
 - **構成要素**
   - Discord Bot（`main.py` / `cogs/*`）
   - PostgreSQL（Railway上で運用）
@@ -284,7 +284,9 @@ Winglish-bot/
 ## 関連ドキュメント
 
 ### ガイド類 (`docs/guides/`)
-- [content-strategy.md](docs/guides/content-strategy.md) - **ユーザー視点でのコンテンツ戦略とUX設計**
+- [university-entrance-exam-strategy.md](docs/guides/university-entrance-exam-strategy.md) - **🎯 大学受験専門化戦略：ターゲット明確化とコンテンツ再設計**
+- [content-strategy.md](docs/guides/content-strategy.md) - ユーザー視点でのコンテンツ戦略とUX設計
+- [content-redesign.md](docs/guides/content-redesign.md) - コンテンツ再設計：現状コンテンツの評価と改善案
 - [environment-and-error-handling.md](docs/guides/environment-and-error-handling.md) - 環境変数管理とエラーハンドリングの詳細
 - [repository-migration.md](docs/guides/repository-migration.md) - リポジトリ移行とPAT利用の手順
 - [roadmap.md](docs/guides/roadmap.md) - 今後の改善アイデアと優先タスク
