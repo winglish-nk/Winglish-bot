@@ -2,34 +2,26 @@ import discord, random, uuid
 from discord.ext import commands
 from db import get_pool
 from srs import update_srs
+from error_handler import ErrorHandler
+import logging
+
+logger = logging.getLogger('winglish.vocab')
 
 # ------------------------
 # 共通ユーティリティ
 # ------------------------
 async def ensure_defer(interaction: discord.Interaction):
     """未応答ならdeferする（二重deferを回避）"""
-    try:
-        if not interaction.response.is_done():
-            await interaction.response.defer(thinking=False)
-    except Exception:
-        pass
+    await ErrorHandler.safe_defer(interaction)
 
 async def safe_edit(interaction: discord.Interaction, **kwargs):
     """このインタラクションのメッセージを安全に編集する"""
-    try:
-        if not interaction.response.is_done():
-            await interaction.response.edit_message(**kwargs)
-            return
-    except Exception:
-        pass
-    try:
-        await interaction.edit_original_response(**kwargs)
-    except Exception:
-        # それもダメなら元メッセージを直接編集
-        try:
-            await interaction.message.edit(**kwargs)
-        except Exception:
-            pass
+    await ErrorHandler.safe_edit_message(
+        interaction,
+        embed=kwargs.get('embed'),
+        view=kwargs.get('view'),
+        content=kwargs.get('content')
+    )
 
 # ------------------------
 # 完了後や中断時に表示するメニュー View
@@ -123,8 +115,8 @@ class Vocab(commands.Cog):
                         )
                         new_view.add_item(b)
             await safe_edit(interaction, view=new_view)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"ボタン無効化に失敗: {e}")
 
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
@@ -149,31 +141,51 @@ class Vocab(commands.Cog):
 
     # 10問スタート
     async def start_ten(self, interaction: discord.Interaction):
-        user_id = str(interaction.user.id)
-        await ensure_defer(interaction)
+        try:
+            user_id = str(interaction.user.id)
+            await ensure_defer(interaction)
 
-        pool = await get_pool()
-        async with pool.acquire() as con:
-            words = await con.fetch("""
-                SELECT word_id, word, jp, pos, example_en, example_ja, synonyms, derived
-                FROM words
-                ORDER BY random()
-                LIMIT 20
-            """)
-        items = [dict(r) for r in words][:10]
-        batch_id = str(uuid.uuid4())
+            pool = await get_pool()
+            async with pool.acquire() as con:
+                words = await con.fetch("""
+                    SELECT word_id, word, jp, pos, example_en, example_ja, synonyms, derived
+                    FROM words
+                    ORDER BY random()
+                    LIMIT 20
+                """)
+            
+            if not words or len(words) < 10:
+                error_msg = await ErrorHandler.handle_database_error(
+                    Exception("単語データが不足しています"),
+                    "start_ten: 単語データ取得"
+                )
+                await ErrorHandler.safe_send_followup(
+                    interaction,
+                    error_msg,
+                    ephemeral=True
+                )
+                return
+            
+            items = [dict(r) for r in words][:10]
+            batch_id = str(uuid.uuid4())
 
-        view = VocabSessionView(batch_id, items)
-        await safe_edit(interaction, embed=discord.Embed(title="英単語 10問"), view=None)
-        await view.send_current(interaction)
+            view = VocabSessionView(batch_id, items)
+            await safe_edit(interaction, embed=discord.Embed(title="英単語 10問"), view=None)
+            await view.send_current(interaction)
 
-        async with (await get_pool()).acquire() as con:
-            await con.execute(
-                "INSERT INTO session_batches(user_id, module, batch_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
-                user_id, "vocab", batch_id
+            async with (await get_pool()).acquire() as con:
+                await con.execute(
+                    "INSERT INTO session_batches(user_id, module, batch_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
+                    user_id, "vocab", batch_id
+                )
+
+            self.bot._vocab_session = view
+        except Exception as e:
+            await ErrorHandler.handle_interaction_error(
+                interaction,
+                e,
+                log_context="vocab.start_ten"
             )
-
-        self.bot._vocab_session = view
 
     # 解答処理（覚えた/忘れそう）
     async def handle_answer(self, interaction: discord.Interaction, cid: str):
@@ -190,26 +202,48 @@ class Vocab(commands.Cog):
 
             user_id = str(interaction.user.id)
             quality = 5 if "known" in cid else 2
-            word_id = int(cid.split(":")[-1])
-
-            pool = await get_pool()
-            async with pool.acquire() as con:
-                row = await con.fetchrow(
-                    "SELECT easiness, interval_days, consecutive_correct FROM srs_state WHERE user_id=$1 AND word_id=$2",
-                    user_id, word_id
+            try:
+                word_id = int(cid.split(":")[-1])
+            except (ValueError, IndexError) as e:
+                logger.error(f"word_idの解析に失敗: {cid}")
+                await ErrorHandler.handle_interaction_error(
+                    interaction,
+                    e,
+                    user_message="❌ 内部エラーが発生しました。最初からやり直してください。",
+                    log_context="vocab.handle_answer: word_id解析"
                 )
-                if row:
-                    e, i, c = row["easiness"], row["interval_days"], row["consecutive_correct"]
-                else:
-                    e, i, c = 2.5, 0, 0
+                return
 
-                e, i, c, next_review = update_srs(e, i, c, quality)
-                await con.execute("""
-                    INSERT INTO srs_state(user_id, word_id, easiness, interval_days, consecutive_correct, next_review)
-                    VALUES($1,$2,$3,$4,$5,$6)
-                    ON CONFLICT (user_id, word_id) DO UPDATE
-                    SET easiness=$3, interval_days=$4, consecutive_correct=$5, next_review=$6
-                """, user_id, word_id, e, i, c, next_review)
+            try:
+                pool = await get_pool()
+                async with pool.acquire() as con:
+                    row = await con.fetchrow(
+                        "SELECT easiness, interval_days, consecutive_correct FROM srs_state WHERE user_id=$1 AND word_id=$2",
+                        user_id, word_id
+                    )
+                    if row:
+                        e, i, c = row["easiness"], row["interval_days"], row["consecutive_correct"]
+                    else:
+                        e, i, c = 2.5, 0, 0
+
+                    e, i, c, next_review = update_srs(e, i, c, quality)
+                    await con.execute("""
+                        INSERT INTO srs_state(user_id, word_id, easiness, interval_days, consecutive_correct, next_review)
+                        VALUES($1,$2,$3,$4,$5,$6)
+                        ON CONFLICT (user_id, word_id) DO UPDATE
+                        SET easiness=$3, interval_days=$4, consecutive_correct=$5, next_review=$6
+                    """, user_id, word_id, e, i, c, next_review)
+            except Exception as db_error:
+                error_msg = await ErrorHandler.handle_database_error(
+                    db_error,
+                    "vocab.handle_answer: SRS更新"
+                )
+                await ErrorHandler.safe_send_followup(
+                    interaction,
+                    error_msg,
+                    ephemeral=True
+                )
+                return
 
             # 次へ
             if isinstance(view, VocabSessionView):
@@ -217,6 +251,12 @@ class Vocab(commands.Cog):
                 await view.send_current(interaction)
             else:
                 await self.start_ten(interaction)
+        except Exception as e:
+            await ErrorHandler.handle_interaction_error(
+                interaction,
+                e,
+                log_context="vocab.handle_answer"
+            )
         finally:
             if isinstance(view, VocabSessionView):
                 view.busy = False
@@ -240,53 +280,93 @@ class Vocab(commands.Cog):
 
     # 前々回テスト（プレースホルダ）
     async def prevprev_test(self, interaction: discord.Interaction):
-        await ensure_defer(interaction)
-        user_id = str(interaction.user.id)
-        pool = await get_pool()
-        async with pool.acquire() as con:
-            rows = await con.fetch("""
-                SELECT batch_id FROM session_batches
-                WHERE user_id=$1 AND module='vocab'
-                ORDER BY created_at DESC LIMIT 3
-            """, user_id)
+        try:
+            await ensure_defer(interaction)
+            user_id = str(interaction.user.id)
+            
+            try:
+                pool = await get_pool()
+                async with pool.acquire() as con:
+                    rows = await con.fetch("""
+                        SELECT batch_id FROM session_batches
+                        WHERE user_id=$1 AND module='vocab'
+                        ORDER BY created_at DESC LIMIT 3
+                    """, user_id)
+            except Exception as db_error:
+                error_msg = await ErrorHandler.handle_database_error(
+                    db_error,
+                    "vocab.prevprev_test"
+                )
+                await ErrorHandler.safe_send_followup(
+                    interaction,
+                    error_msg,
+                    ephemeral=True
+                )
+                return
 
-        if len(rows) < 3:
-            e = discord.Embed(title="前々回テスト", description="履歴が足りません。")
+            if len(rows) < 3:
+                e = discord.Embed(title="前々回テスト", description="履歴が足りません。")
+                await safe_edit(interaction, embed=e, view=VocabMenuView())
+                return
+
+            target = rows[2]["batch_id"]
+            e = discord.Embed(
+                title="前々回テスト",
+                description=f"batch: {target}\n※4択テストは今後実装（MVP後半）"
+            )
             await safe_edit(interaction, embed=e, view=VocabMenuView())
-            return
-
-        target = rows[2]["batch_id"]
-        e = discord.Embed(
-            title="前々回テスト",
-            description=f"batch: {target}\n※4択テストは今後実装（MVP後半）"
-        )
-        await safe_edit(interaction, embed=e, view=VocabMenuView())
+        except Exception as e:
+            await ErrorHandler.handle_interaction_error(
+                interaction,
+                e,
+                log_context="vocab.prevprev_test"
+            )
 
     # 苦手テスト（候補表示）
     async def weak_test(self, interaction: discord.Interaction):
-        await ensure_defer(interaction)
-        user_id = str(interaction.user.id)
-        pool = await get_pool()
-        async with pool.acquire() as con:
-            rows = await con.fetch("""
-                SELECT s.word_id, w.word, w.jp, w.pos
-                FROM srs_state s
-                JOIN words w ON w.word_id=s.word_id
-                WHERE s.user_id=$1 AND (s.next_review <= CURRENT_DATE OR s.consecutive_correct < 2)
-                ORDER BY s.consecutive_correct ASC NULLS FIRST, s.next_review ASC NULLS LAST
-                LIMIT 10
-            """, user_id)
+        try:
+            await ensure_defer(interaction)
+            user_id = str(interaction.user.id)
+            
+            try:
+                pool = await get_pool()
+                async with pool.acquire() as con:
+                    rows = await con.fetch("""
+                        SELECT s.word_id, w.word, w.jp, w.pos
+                        FROM srs_state s
+                        JOIN words w ON w.word_id=s.word_id
+                        WHERE s.user_id=$1 AND (s.next_review <= CURRENT_DATE OR s.consecutive_correct < 2)
+                        ORDER BY s.consecutive_correct ASC NULLS FIRST, s.next_review ASC NULLS LAST
+                        LIMIT 10
+                    """, user_id)
+            except Exception as db_error:
+                error_msg = await ErrorHandler.handle_database_error(
+                    db_error,
+                    "vocab.weak_test"
+                )
+                await ErrorHandler.safe_send_followup(
+                    interaction,
+                    error_msg,
+                    ephemeral=True
+                )
+                return
 
-        if not rows:
+            if not rows:
+                await safe_edit(interaction,
+                                embed=discord.Embed(title="苦手テスト", description="対象がありません。"),
+                                view=VocabMenuView())
+                return
+
+            words = "\n".join([f"- **{r['word']}**（意味：||{r['jp']}||）" for r in rows])
             await safe_edit(interaction,
-                            embed=discord.Embed(title="苦手テスト", description="対象がありません。"),
+                            embed=discord.Embed(title="苦手テスト（候補）", description=words),
                             view=VocabMenuView())
-            return
-
-        words = "\n".join([f"- **{r['word']}**（意味：||{r['jp']}||）" for r in rows])
-        await safe_edit(interaction,
-                        embed=discord.Embed(title="苦手テスト（候補）", description=words),
-                        view=VocabMenuView())
+        except Exception as e:
+            await ErrorHandler.handle_interaction_error(
+                interaction,
+                e,
+                log_context="vocab.weak_test"
+            )
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Vocab(bot))

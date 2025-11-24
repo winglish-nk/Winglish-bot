@@ -1,6 +1,10 @@
 import discord
 from discord.ext import commands
 from utils import info_embed, main_menu_view
+from error_handler import ErrorHandler
+import logging
+
+logger = logging.getLogger('winglish.menu')
 
 class MenuView(discord.ui.View):
     def __init__(self):
@@ -16,42 +20,39 @@ class MenuView(discord.ui.View):
 
     @discord.ui.button(label="長文読解", style=discord.ButtonStyle.primary, custom_id="menu:reading")
     async def reading_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # 1) まずは見た目を「生成中…」に更新
         try:
-            await interaction.response.edit_message(
+            # 1) まずは見た目を「生成中…」に更新
+            await ErrorHandler.safe_edit_message(
+                interaction,
                 embed=info_embed("長文読解", "問題を生成中です…（数秒かかることがあります）"),
                 view=None
             )
-        except discord.InteractionResponded:
-            try:
-                await interaction.message.edit(
-                    embed=info_embed("長文読解", "問題を生成中です…（数秒かかることがあります）"),
-                    view=None
+
+            # 2) ReadingCog を取得して、既存のコマンド実装を直接呼ぶ
+            rcog = interaction.client.get_cog("ReadingCog")
+            if rcog is None:
+                await ErrorHandler.safe_send_followup(
+                    interaction,
+                    "❌ ReadingCog が見つかりませんでした。管理者に連絡してください。",
+                    ephemeral=True
                 )
-            except Exception:
-                pass
+                return
 
-        # 2) ReadingCog を取得して、既存のコマンド実装を直接呼ぶ
-        rcog = interaction.client.get_cog("ReadingCog")
-        if rcog is None:
-            # 保険：Cog が無ければ案内して終了
-            await interaction.followup.send("❌ ReadingCog が見つかりませんでした。管理者に連絡してください。", ephemeral=True)
-            return
-
-        # command ctx を作って既存実装を再利用
-        ctx = await interaction.client.get_context(interaction.message)
-        try:
+            # command ctx を作って既存実装を再利用
+            ctx = await interaction.client.get_context(interaction.message)
             # 既存の !reading コマンドと同じ入口を使う（デフォルトは toeic）
             await rcog.start_reading(ctx, kind="toeic")
         except Exception as e:
-            await interaction.followup.send(f"❌ 出題に失敗しました: {e}", ephemeral=True)
+            await ErrorHandler.handle_interaction_error(
+                interaction,
+                e,
+                user_message="❌ 長文読解の問題生成に失敗しました。しばらく待ってから再試行してください。",
+                log_context="menu.reading_btn"
+            )
 
 
     async def _replace_with_new_bam(self, interaction, embed, view):
-        try:
-            await interaction.response.edit_message(embed=embed, view=view)
-        except discord.InteractionResponded:
-            await interaction.message.edit(embed=embed, view=view)
+        await ErrorHandler.safe_edit_message(interaction, embed=embed, view=view)
 
 # サブメニューViews（最低限）
 class VocabMenuView(discord.ui.View):
@@ -89,10 +90,18 @@ class Menu(commands.Cog):
             return
         cid = interaction.data.get("custom_id", "")
         if cid == "back:main":
-            await interaction.response.edit_message(
-                embed=info_embed("Winglish へようこそ", "学習を開始しましょう👇"),
-                view=MenuView()
-            )
+            try:
+                await ErrorHandler.safe_edit_message(
+                    interaction,
+                    embed=info_embed("Winglish へようこそ", "学習を開始しましょう👇"),
+                    view=MenuView()
+                )
+            except Exception as e:
+                await ErrorHandler.handle_interaction_error(
+                    interaction,
+                    e,
+                    log_context="menu.on_interaction: back:main"
+                )
         # vocab/svocm/reading のサブメニューイベントを中継
         elif cid.startswith("vocab:") or cid.startswith("svocm:") or cid.startswith("reading:"):
             # 他の Cog に処理を任せる（何もしない）

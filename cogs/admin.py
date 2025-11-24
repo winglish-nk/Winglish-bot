@@ -2,9 +2,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import re
+import logging
 
 from utils import info_embed
 from cogs.menu import MenuView  # callback付きメインメニュー
+from error_handler import ErrorHandler
+
+logger = logging.getLogger('winglish.admin')
 
 def is_manager():
     """管理用ガード（管理者orManage Channels権限）"""
@@ -49,15 +53,42 @@ class WinglishAdmin(commands.Cog):
     async def attach_menu(self, interaction: discord.Interaction, message_id: str):
         await interaction.response.defer(ephemeral=True)
         try:
-            msg = await interaction.channel.fetch_message(int(message_id))
+            try:
+                msg = await interaction.channel.fetch_message(int(message_id))
+            except ValueError:
+                await interaction.followup.send("❌ メッセージIDが無効です。", ephemeral=True)
+                return
+            except discord.NotFound:
+                await interaction.followup.send("❌ メッセージが見つかりませんでした。", ephemeral=True)
+                return
+            except discord.Forbidden:
+                await interaction.followup.send("❌ メッセージにアクセスする権限がありません。", ephemeral=True)
+                return
+            except Exception as e:
+                await ErrorHandler.handle_interaction_error(
+                    interaction,
+                    e,
+                    user_message="❌ メッセージの取得に失敗しました。",
+                    log_context="admin.attach_menu: メッセージ取得"
+                )
+                return
+            
+            try:
+                await msg.edit(view=MenuView())
+                await interaction.followup.send("✅ View を付け直しました。", ephemeral=True)
+            except Exception as e:
+                await ErrorHandler.handle_interaction_error(
+                    interaction,
+                    e,
+                    user_message="❌ メッセージの編集に失敗しました。",
+                    log_context="admin.attach_menu: メッセージ編集"
+                )
         except Exception as e:
-            await interaction.followup.send(f"❌ 取得失敗: {e}", ephemeral=True)
-            return
-        try:
-            await msg.edit(view=MenuView())
-            await interaction.followup.send("✅ View を付け直しました。", ephemeral=True)
-        except Exception as e:
-            await interaction.followup.send(f"❌ 編集失敗: {e}", ephemeral=True)
+            await ErrorHandler.handle_interaction_error(
+                interaction,
+                e,
+                log_context="admin.attach_menu"
+            )
 
     @group.command(name="reset", description="このチャンネルの直近の Winglish メッセージを掃除してメニューを再掲します")
     @is_manager()
