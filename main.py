@@ -50,30 +50,47 @@ class WinglishBot(commands.Bot):
         
         #--- スラッシュコマンド同期 ---
         try:
+            logger.info("="*60)
             logger.info("🔄 スラッシュコマンド同期を開始します...")
+            
+            # 同期前のコマンドを確認
+            commands_before = list(self.tree.get_commands())
+            logger.info(f"📊 同期前のコマンド数（ローカル）: {len(commands_before)}")
+            for cmd in sorted(commands_before, key=lambda x: x.name):
+                logger.info(f"  - /{cmd.name}")
+            
             if TEST_GUILD_ID:
                 guild = discord.Object(id=int(TEST_GUILD_ID))
                 logger.info(f"📡 テストギルド ({TEST_GUILD_ID}) に同期します...")
                 synced_commands = await self.tree.sync(guild=guild)
                 logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
-                logger.info(f"📊 同期されたコマンド数: {len(synced_commands)}")
-                for cmd in sorted(synced_commands, key=lambda x: x.name):
-                    logger.info(f"  ✅ /{cmd.name}")
+                logger.info(f"📊 同期されたコマンド数（Discord）: {len(synced_commands)}")
                 
-                # sys_notebooksが含まれているか特別に確認
-                cmd_names = [cmd.name for cmd in synced_commands]
-                if 'sys_notebooks' in cmd_names:
-                    logger.info("✅ sys_notebooksコマンドが同期されています！")
+                if synced_commands:
+                    for cmd in sorted(synced_commands, key=lambda x: x.name):
+                        logger.info(f"  ✅ /{cmd.name}")
+                    
+                    # sys_notebooksが含まれているか特別に確認
+                    cmd_names = [cmd.name for cmd in synced_commands]
+                    if 'sys_notebooks' in cmd_names:
+                        logger.info("="*60)
+                        logger.info("✅ sys_notebooksコマンドが同期されています！")
+                        logger.info("="*60)
+                    else:
+                        logger.warning("="*60)
+                        logger.warning("⚠️ sys_notebooksコマンドが同期されていません")
+                        logger.warning(f"同期されたコマンド一覧: {', '.join(cmd_names)}")
+                        logger.warning("="*60)
                 else:
-                    logger.warning("⚠️ sys_notebooksコマンドが同期されていません")
-                    logger.info(f"同期されたコマンド一覧: {', '.join(cmd_names)}")
+                    logger.warning("⚠️ 同期されたコマンドが0個です")
             else:
                 logger.info("📡 グローバル同期します...")
                 synced_commands = await self.tree.sync()
                 logger.info("✅ スラッシュコマンド同期完了（グローバル）")
-                logger.info(f"📊 同期されたコマンド数: {len(synced_commands)}")
-                for cmd in sorted(synced_commands, key=lambda x: x.name):
-                    logger.info(f"  ✅ /{cmd.name}")
+                logger.info(f"📊 同期されたコマンド数（Discord）: {len(synced_commands)}")
+                if synced_commands:
+                    for cmd in sorted(synced_commands, key=lambda x: x.name):
+                        logger.info(f"  ✅ /{cmd.name}")
         except ValueError as e:
             logger.error(f"❌ TEST_GUILD_ID が無効です: {e}", exc_info=True)
         except discord.HTTPException as e:
