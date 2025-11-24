@@ -13,7 +13,7 @@ except ImportError:
     sys.exit(1)
 
 from config import DISCORD_TOKEN, TEST_GUILD_ID, validate_required_env
-from db import init_db
+from db import init_db, close_db
 from utils import info_embed
 from cogs.menu import MenuView
 
@@ -30,12 +30,16 @@ intents.message_content = True
 intents.members = True
 
 class WinglishBot(commands.Bot):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(command_prefix="!", intents=intents, help_command=None)
 
     async def setup_hook(self) -> None:
-        await init_db()
-        logger.info("✅ データベース初期化完了")
+        try:
+            await init_db()
+            logger.info("✅ データベース初期化完了")
+        except Exception as e:
+            logger.critical(f"❌ データベース初期化に失敗しました: {e}", exc_info=True)
+            raise
 
         cogs = ["cogs.onboarding", "cogs.menu", "cogs.vocab", "cogs.svocm", "cogs.reading", "cogs.admin"]
         for cog in cogs:
@@ -112,4 +116,10 @@ if __name__ == "__main__":
     finally:
         logger.info("="*60)
         logger.info("👋 Winglish Bot を終了します")
+        logger.info("データベース接続を閉じています...")
+        try:
+            import asyncio
+            asyncio.run(close_db())
+        except Exception as e:
+            logger.warning(f"データベース接続のクローズ時にエラーが発生しました: {e}")
         logger.info("="*60)
