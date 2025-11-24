@@ -287,6 +287,7 @@ Winglish-bot/
 - [environment-and-error-handling.md](docs/guides/environment-and-error-handling.md) - 環境変数管理とエラーハンドリングの詳細
 - [repository-migration.md](docs/guides/repository-migration.md) - リポジトリ移行とPAT利用の手順
 - [roadmap.md](docs/guides/roadmap.md) - 今後の改善アイデアと優先タスク
+- [ci-cd-verification.md](docs/guides/ci-cd-verification.md) - CI/CD動作確認方法
 - [DB_USAGE_GUIDE.md](docs/guides/DB_USAGE_GUIDE.md) - データベース接続の使用方法
 - [IMPROVEMENTS_BENEFITS.md](docs/guides/IMPROVEMENTS_BENEFITS.md) - 改善による効果の説明
 - [IMPROVEMENTS_EXAMPLES.md](docs/guides/IMPROVEMENTS_EXAMPLES.md) - 改善前後のコード比較
