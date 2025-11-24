@@ -37,7 +37,7 @@ class WinglishBot(commands.Bot):
             logger.critical(f"❌ データベース初期化に失敗しました: {e}", exc_info=True)
             raise
 
-        cogs = ["cogs.onboarding", "cogs.menu", "cogs.vocab", "cogs.svocm", "cogs.reading", "cogs.admin"]
+        cogs = ["cogs.onboarding", "cogs.menu", "cogs.vocab", "cogs.notebook", "cogs.svocm", "cogs.reading", "cogs.admin"]
         for cog in cogs:
             try:
                 await self.load_extension(cog)

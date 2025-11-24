@@ -95,3 +95,29 @@ CREATE TABLE IF NOT EXISTS session_batches (
   created_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY(user_id, module, batch_id)
 );
+
+-- 単語帳テーブル
+CREATE TABLE IF NOT EXISTS vocabulary_notebooks (
+    notebook_id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    is_auto BOOLEAN DEFAULT FALSE,  -- 自動更新かどうか
+    auto_type TEXT,  -- 'weak', 'review', etc.
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, name)
+);
+
+-- 単語帳-単語の関連テーブル
+CREATE TABLE IF NOT EXISTS notebook_words (
+    notebook_id INT NOT NULL REFERENCES vocabulary_notebooks(notebook_id) ON DELETE CASCADE,
+    word_id INT NOT NULL REFERENCES words(word_id) ON DELETE CASCADE,
+    added_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY(notebook_id, word_id)
+);
+
+-- インデックス
+CREATE INDEX IF NOT EXISTS idx_notebook_words_notebook ON notebook_words(notebook_id);
+CREATE INDEX IF NOT EXISTS idx_notebook_words_word ON notebook_words(word_id);
+CREATE INDEX IF NOT EXISTS idx_vocabulary_notebooks_user ON vocabulary_notebooks(user_id);
