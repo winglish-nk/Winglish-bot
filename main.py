@@ -64,9 +64,33 @@ class WinglishBot(commands.Bot):
                 logger.info(f"📡 テストギルド ({TEST_GUILD_ID}) に同期します...")
                 
                 try:
+                    # Discord APIから直接コマンドを取得して、同期前の状態を確認
+                    try:
+                        existing_commands = await self.tree.fetch_commands(guild=guild)
+                        logger.info(f"📊 Discord APIから取得した既存コマンド数: {len(existing_commands)}")
+                        if existing_commands:
+                            for cmd in existing_commands:
+                                logger.info(f"  - /{cmd.name} (既存)")
+                    except Exception as fetch_error:
+                        logger.warning(f"⚠️ 既存コマンドの取得に失敗（無視して続行）: {fetch_error}")
+                    
                     synced_commands = await self.tree.sync(guild=guild)
                     logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
                     logger.info(f"📊 同期されたコマンド数（Discord返り値）: {len(synced_commands)}")
+                    
+                    # 同期後に再度確認
+                    try:
+                        after_sync_commands = await self.tree.fetch_commands(guild=guild)
+                        logger.info(f"📊 同期後にDiscord APIから取得したコマンド数: {len(after_sync_commands)}")
+                        if after_sync_commands:
+                            for cmd in after_sync_commands:
+                                logger.info(f"  ✅ /{cmd.name} (同期後)")
+                                if cmd.name == 'sys_notebooks':
+                                    logger.info("    ⭐ sys_notebooksコマンドがDiscord APIに登録されています！")
+                        else:
+                            logger.warning("⚠️ 同期後もコマンドが0個です。同期が失敗している可能性があります。")
+                    except Exception as fetch_error:
+                        logger.warning(f"⚠️ 同期後コマンドの取得に失敗: {fetch_error}")
                     
                     # 同期が成功したかどうかを確認
                     if len(synced_commands) == 0 and len(commands_before) > 0:
@@ -75,6 +99,10 @@ class WinglishBot(commands.Bot):
                         logger.warning("⚠️ しかし、既存コマンドを更新する場合は空が返されることもあります")
                 except discord.HTTPException as sync_error:
                     logger.error(f"❌ スラッシュコマンド同期中にHTTPエラー: {sync_error.status} - {sync_error.text}")
+                    logger.error(f"❌ エラー詳細: {sync_error}")
+                    raise
+                except Exception as sync_error:
+                    logger.error(f"❌ スラッシュコマンド同期中に予期しないエラー: {sync_error}", exc_info=True)
                     raise
                 
                 # tree.sync()の戻り値が空の場合があるため、同期前のコマンドリストを使用して確認
