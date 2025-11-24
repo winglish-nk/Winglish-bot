@@ -194,9 +194,9 @@ class WinglishAdmin(commands.Cog):
     @group.command(name="diag_vocab", description="語彙テーブルの件数とサンプルを表示")
     async def diag_vocab(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        from db import get_pool
-        pool = await get_pool()
-        async with pool.acquire() as con:
+        from db import get_db_manager
+        db_manager = get_db_manager()
+        async with db_manager.acquire() as conn:
             n = await con.fetchval("SELECT COUNT(*) FROM words")
             sample = await con.fetch("""
                 SELECT word_id, word, jp, pos
@@ -237,9 +237,9 @@ class WinglishAdmin(commands.Cog):
         ch = await guild.create_text_channel(ch_name, category=category, overwrites=overwrites)
 
         # DB users にも反映（upsert）
-        from db import get_pool
-        pool = await get_pool()
-        async with pool.acquire() as con:
+        from db import get_db_manager
+        db_manager = get_db_manager()
+        async with db_manager.acquire() as conn:
             await con.execute(
                 "INSERT INTO users(user_id, channel_id) VALUES($1,$2) "
                 "ON CONFLICT (user_id) DO UPDATE SET channel_id=$2",

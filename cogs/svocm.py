@@ -6,7 +6,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from db import get_pool
+from db import get_db_manager
 from error_handler import ErrorHandler
 from utils import info_embed
 
@@ -51,9 +51,9 @@ class SvocmModal(discord.ui.Modal, title="SVOCM 解答"):
 
             # ログ保存
             try:
-                pool = await get_pool()
-                async with pool.acquire() as con:
-                    await con.execute("""
+                db_manager = get_db_manager()
+                async with db_manager.acquire() as conn:
+                    await conn.execute("""
                       INSERT INTO study_logs(user_id, module, item_id, result)
                       VALUES($1,'svocm',$2,$3::jsonb)
                     """, str(interaction.user.id), int(self.item_id), {"feedback": text})
@@ -90,12 +90,12 @@ class Svocm(commands.Cog):
     async def show_item(self, interaction: discord.Interaction, pattern: Optional[int]) -> None:
         try:
             try:
-                pool = await get_pool()
-                async with pool.acquire() as con:
+                db_manager = get_db_manager()
+                async with db_manager.acquire() as conn:
                     if pattern:
-                        row = await con.fetchrow("SELECT * FROM svocm_items WHERE pattern=$1 ORDER BY random() LIMIT 1", pattern)
+                        row = await conn.fetchrow("SELECT * FROM svocm_items WHERE pattern=$1 ORDER BY random() LIMIT 1", pattern)
                     else:
-                        row = await con.fetchrow("SELECT * FROM svocm_items ORDER BY random() LIMIT 1")
+                        row = await conn.fetchrow("SELECT * FROM svocm_items ORDER BY random() LIMIT 1")
             except Exception as db_error:
                 error_msg = await ErrorHandler.handle_database_error(
                     db_error,

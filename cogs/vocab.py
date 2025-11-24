@@ -7,7 +7,7 @@ from typing import Any, Optional
 import discord
 from discord.ext import commands
 
-from db import get_pool
+from db import get_db_manager
 from error_handler import ErrorHandler
 from srs import update_srs
 
@@ -165,9 +165,9 @@ class Vocab(commands.Cog):
             user_id = str(interaction.user.id)
             await ensure_defer(interaction)
 
-            pool = await get_pool()
-            async with pool.acquire() as con:
-                words = await con.fetch("""
+            db_manager = get_db_manager()
+            async with db_manager.acquire() as conn:
+                words = await conn.fetch("""
                     SELECT word_id, word, jp, pos, example_en, example_ja, synonyms, derived
                     FROM words
                     ORDER BY random()
@@ -193,11 +193,12 @@ class Vocab(commands.Cog):
             await safe_edit(interaction, embed=discord.Embed(title="英単語 10問"), view=None)
             await view.send_current(interaction)
 
-            async with (await get_pool()).acquire() as con:
-                await con.execute(
-                    "INSERT INTO session_batches(user_id, module, batch_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
-                    user_id, "vocab", batch_id
-                )
+        db_manager = get_db_manager()
+        async with db_manager.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO session_batches(user_id, module, batch_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
+                user_id, "vocab", batch_id
+            )
 
             self.bot._vocab_session = view
         except Exception as e:
@@ -235,9 +236,9 @@ class Vocab(commands.Cog):
                 return
 
             try:
-                pool = await get_pool()
-                async with pool.acquire() as con:
-                    row = await con.fetchrow(
+                db_manager = get_db_manager()
+                async with db_manager.acquire() as conn:
+                    row = await conn.fetchrow(
                         "SELECT easiness, interval_days, consecutive_correct FROM srs_state WHERE user_id=$1 AND word_id=$2",
                         user_id, word_id
                     )
@@ -247,7 +248,7 @@ class Vocab(commands.Cog):
                         e, i, c = 2.5, 0, 0
 
                     e, i, c, next_review = update_srs(e, i, c, quality)
-                    await con.execute("""
+                    await conn.execute("""
                         INSERT INTO srs_state(user_id, word_id, easiness, interval_days, consecutive_correct, next_review)
                         VALUES($1,$2,$3,$4,$5,$6)
                         ON CONFLICT (user_id, word_id) DO UPDATE
@@ -305,9 +306,9 @@ class Vocab(commands.Cog):
             user_id = str(interaction.user.id)
             
             try:
-                pool = await get_pool()
-                async with pool.acquire() as con:
-                    rows = await con.fetch("""
+                db_manager = get_db_manager()
+                async with db_manager.acquire() as conn:
+                    rows = await conn.fetch("""
                         SELECT batch_id FROM session_batches
                         WHERE user_id=$1 AND module='vocab'
                         ORDER BY created_at DESC LIMIT 3
@@ -349,9 +350,9 @@ class Vocab(commands.Cog):
             user_id = str(interaction.user.id)
             
             try:
-                pool = await get_pool()
-                async with pool.acquire() as con:
-                    rows = await con.fetch("""
+                db_manager = get_db_manager()
+                async with db_manager.acquire() as conn:
+                    rows = await conn.fetch("""
                         SELECT s.word_id, w.word, w.jp, w.pos
                         FROM srs_state s
                         JOIN words w ON w.word_id=s.word_id

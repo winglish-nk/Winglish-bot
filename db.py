@@ -134,13 +134,37 @@ class DatabaseManager:
         return self._pool
 
 
-# グローバルなDatabaseManagerインスタンス（後方互換性のため）
+# グローバルなDatabaseManagerインスタンス（一元管理用）
 _db_manager: Optional[DatabaseManager] = None
+
+
+def get_db_manager() -> DatabaseManager:
+    """
+    グローバルなDatabaseManagerインスタンスを取得する
+    
+    Returns:
+        DatabaseManagerインスタンス
+        
+    Raises:
+        ValueError: DATABASE_URLが設定されていない場合
+    """
+    global _db_manager
+    
+    if DATABASE_URL is None:
+        raise ValueError("DATABASE_URL is not set. Please configure it in environment variables.")
+    
+    if _db_manager is None:
+        _db_manager = DatabaseManager(DATABASE_URL)
+    
+    return _db_manager
 
 
 async def get_pool() -> asyncpg.Pool:
     """
     データベース接続プールを取得する（後方互換性のための関数）
+    
+    Note:
+        新しいコードでは get_db_manager() の使用を推奨します。
     
     Returns:
         データベース接続プール
@@ -149,21 +173,20 @@ async def get_pool() -> asyncpg.Pool:
         ValueError: DATABASE_URLが設定されていない場合
         RuntimeError: プールが初期化されていない場合
     """
-    global _pool, _db_manager
+    global _pool
     
-    if DATABASE_URL is None:
-        raise ValueError("DATABASE_URL is not set. Please configure it in environment variables.")
+    # DatabaseManagerを使用して初期化
+    db_manager = get_db_manager()
     
     # 既存のグローバルプールがあれば返す（後方互換性）
     if _pool is not None:
         return _pool
     
-    # DatabaseManagerを使用して初期化
-    if _db_manager is None:
-        _db_manager = DatabaseManager(DATABASE_URL)
-        await _db_manager.initialize(min_size=1, max_size=10)
-        _pool = _db_manager.pool
+    # DatabaseManagerで初期化
+    if db_manager._pool is None:
+        await db_manager.initialize(min_size=1, max_size=10)
     
+    _pool = db_manager.pool
     return _pool
 
 
@@ -175,11 +198,16 @@ async def init_db() -> None:
         FileNotFoundError: sql/schema.sql が見つからない場合
         asyncpg.PostgresError: データベースエラーが発生した場合
     """
-    pool = await get_pool()
+    db_manager = get_db_manager()
+    
+    # DatabaseManagerで初期化（まだの場合）
+    if db_manager._pool is None:
+        await db_manager.initialize(min_size=1, max_size=10)
+    
     try:
         with open("sql/schema.sql", "r", encoding="utf-8") as f:
             schema = f.read()
-        async with pool.acquire() as con:
+        async with db_manager.acquire() as con:
             await con.execute(schema)
         logger.info("✅ データベーススキーマの適用が完了しました")
     except FileNotFoundError:
@@ -208,3 +236,11 @@ async def close_db() -> None:
     elif _pool:
         await _pool.close()
         _pool = None
+
+
+# グローバルアクセス用（モジュールレベルで公開）
+# 使用例: 
+#   from db import get_db_manager
+#   db_manager = get_db_manager()
+#   async with db_manager.acquire() as conn: ...
+__all__ = ['DatabaseManager', 'get_db_manager', 'get_pool', 'init_db', 'close_db']

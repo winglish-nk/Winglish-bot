@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from db import get_pool
+from db import get_db_manager
 from utils import info_embed
 from cogs.menu import MenuView
 
@@ -35,9 +35,9 @@ class Onboarding(commands.Cog):
         ch = await guild.create_text_channel(ch_name, category=category, overwrites=overwrites)
 
         # DBユーザー登録
-        pool = await get_pool()
-        async with pool.acquire() as con:
-            await con.execute("INSERT INTO users(user_id) VALUES($1) ON CONFLICT (user_id) DO NOTHING", str(member.id))
+        db_manager = get_db_manager()
+        async with db_manager.acquire() as conn:
+            await conn.execute("INSERT INTO users(user_id) VALUES($1) ON CONFLICT (user_id) DO NOTHING", str(member.id))
 
         # メインBAM送付（常に最新1つ方針の起点）
         await ch.send(embed=info_embed("Winglish へようこそ", "学習を開始しましょう👇"), view=MenuView())
