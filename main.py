@@ -85,9 +85,31 @@ class WinglishBot(commands.Bot):
                         logger.warning(f"⚠️ 既存コマンドの取得に失敗（無視して続行）: {fetch_error}")
                     
                     logger.info(f"🔄 コマンドを同期します... (ローカル: {len(commands_before)}個)")
-                    synced_commands = await self.tree.sync(guild=guild)
-                    logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
-                    logger.info(f"📊 同期されたコマンド数（Discord返り値）: {len(synced_commands)}")
+                    
+                    # 実際に同期を実行し、詳細なログを出力
+                    try:
+                        synced_commands = await self.tree.sync(guild=guild)
+                        logger.info(f"✅ tree.sync()完了（テストギルド: {TEST_GUILD_ID}）")
+                        logger.info(f"📊 同期されたコマンド数（Discord返り値）: {len(synced_commands)}")
+                        
+                        if synced_commands:
+                            logger.info("✅ 同期が成功しました！以下のコマンドが同期されました:")
+                            for cmd in sorted(synced_commands, key=lambda x: x.name):
+                                logger.info(f"  ✅ /{cmd.name}")
+                        
+                    except discord.app_commands.CommandSyncFailure as sync_failure:
+                        logger.error(f"❌ コマンド同期失敗（CommandSyncFailure）: {sync_failure}")
+                        logger.error(f"❌ これは、コマンドに無効なデータがある可能性があります")
+                        raise
+                    except discord.Forbidden as forbidden_error:
+                        logger.error(f"❌ コマンド同期失敗（Forbidden）: {forbidden_error}")
+                        logger.error(f"❌ Botに'applications.commands'スコープの権限がありません")
+                        logger.error(f"❌ Discord Developer Portal > Bot > OAuth2 > URL Generator で 'applications.commands' スコープを追加してください")
+                        raise
+                    except discord.MissingApplicationID as missing_id:
+                        logger.error(f"❌ コマンド同期失敗（MissingApplicationID）: {missing_id}")
+                        logger.error(f"❌ BotのApplication IDが設定されていません")
+                        raise
                     
                     # 同期後に再度確認（少し待ってから）
                     import asyncio
