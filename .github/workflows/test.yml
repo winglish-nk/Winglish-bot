@@ -38,12 +38,13 @@ jobs:
       run: |
         echo "DISCORD_TOKEN=test_token_for_ci" >> $GITHUB_ENV
         echo "DATABASE_URL=postgresql://test:test@localhost/test" >> $GITHUB_ENV
+        echo "DATABASE_PUBLIC_URL=postgresql://test:test@localhost/test" >> $GITHUB_ENV
         echo "DIFY_API_KEY_QUESTION=test_key" >> $GITHUB_ENV
         echo "DIFY_API_KEY_ANSWER=test_key" >> $GITHUB_ENV
     
     - name: Run tests
       run: |
-        pytest --cov=. --cov-report=xml --cov-report=term-missing
+        pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-exclude=tests/* --cov-exclude=scripts/* -v
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
