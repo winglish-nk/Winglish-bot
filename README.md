@@ -42,7 +42,13 @@ pip install -r requirements.txt
 
 ### 2. `.env` 設定
 
-`.env` ファイルを作成し、以下の環境変数を設定してください：
+`.env.example` ファイルをコピーして `.env` ファイルを作成し、実際の値を設定してください：
+
+```bash
+cp .env.example .env
+```
+
+その後、`.env` ファイルを編集して、実際の値を設定してください：
 
 ```dotenv
 # Discord
@@ -51,26 +57,17 @@ TEST_GUILD_ID=テスト用サーバーID（オプション）
 
 # Database
 DATABASE_PUBLIC_URL=postgresql://user:password@host:port/database
-# または個別設定
-# PGHOST=
-# PGPORT=
-# PGUSER=
-# PGPASSWORD=
-# PGDATABASE=
 
 # Dify API
 DIFY_API_KEY_QUESTION=app-xxxxxxxx
 DIFY_API_KEY_ANSWER=app-yyyyyyyy
-DIFY_ENDPOINT_RUN=https://api.dify.ai/v1/workflows/run
-DIFY_ENDPOINT_CHAT=https://api.dify.ai/v1/chat-messages
 
 # ロギング（オプション）
-LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_FILE=logs/winglish.log  # ログファイルのパス（省略時はコンソール出力のみ）
-
-# Data（オプション）
-WORDS_CSV_PATH=data/All-words-modified_2025-10-29_08-31-22.csv
+LOG_LEVEL=INFO
+LOG_FILE=logs/winglish.log
 ```
+
+> 📝 **ヒント**: `.env.example` ファイルには設定項目の詳細な説明が含まれています。参照してください。
 
 > 🔒 **セキュリティ注意**  
 > - BotトークンやAPIキーは `.env` と Railway Secrets のみに保存し、GitHubには絶対に公開しないでください
