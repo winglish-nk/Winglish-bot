@@ -284,6 +284,7 @@ Winglish-bot/
 ## 関連ドキュメント
 
 ### ガイド類 (`docs/guides/`)
+- [mvp-scope.md](docs/guides/mvp-scope.md) - **🚀 MVP（最小実行可能製品）の範囲定義**
 - [university-entrance-exam-strategy.md](docs/guides/university-entrance-exam-strategy.md) - **🎯 大学受験専門化戦略：ターゲット明確化とコンテンツ再設計**
 - [past-questions-strategy.md](docs/guides/past-questions-strategy.md) - **⚠️ 過去問活用戦略：著作権を考慮したアプローチ**
 - [frequency-list-implementation.md](docs/guides/frequency-list-implementation.md) - **📊 頻出リスト実装方法：データ収集から表示まで**
