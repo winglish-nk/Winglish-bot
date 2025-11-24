@@ -64,6 +64,12 @@ class WinglishBot(commands.Bot):
                 logger.info(f"📡 テストギルド ({TEST_GUILD_ID}) に同期します...")
                 
                 try:
+                    # BotのApplication IDを確認
+                    logger.info(f"📋 Bot Application ID: {self.application_id}")
+                    if not self.application_id:
+                        logger.error("❌ BotのApplication IDが設定されていません！")
+                        logger.error("❌ これは、Discord Developer PortalでBotを作成していないか、トークンが無効です")
+                    
                     # Discord APIから直接コマンドを取得して、同期前の状態を確認
                     try:
                         existing_commands = await self.tree.fetch_commands(guild=guild)
@@ -71,14 +77,22 @@ class WinglishBot(commands.Bot):
                         if existing_commands:
                             for cmd in existing_commands:
                                 logger.info(f"  - /{cmd.name} (既存)")
+                    except discord.Forbidden as fetch_error:
+                        logger.error(f"❌ 既存コマンドの取得に失敗: Botに'applications.commands'スコープの権限がありません")
+                        logger.error(f"❌ Discord Developer PortalでBotを確認してください")
+                        raise
                     except Exception as fetch_error:
                         logger.warning(f"⚠️ 既存コマンドの取得に失敗（無視して続行）: {fetch_error}")
                     
+                    logger.info(f"🔄 コマンドを同期します... (ローカル: {len(commands_before)}個)")
                     synced_commands = await self.tree.sync(guild=guild)
                     logger.info(f"✅ スラッシュコマンド同期完了（テストギルド: {TEST_GUILD_ID}）")
                     logger.info(f"📊 同期されたコマンド数（Discord返り値）: {len(synced_commands)}")
                     
-                    # 同期後に再度確認
+                    # 同期後に再度確認（少し待ってから）
+                    import asyncio
+                    await asyncio.sleep(1)  # Discord APIの反映を待つ
+                    
                     try:
                         after_sync_commands = await self.tree.fetch_commands(guild=guild)
                         logger.info(f"📊 同期後にDiscord APIから取得したコマンド数: {len(after_sync_commands)}")
@@ -88,7 +102,16 @@ class WinglishBot(commands.Bot):
                                 if cmd.name == 'sys_notebooks':
                                     logger.info("    ⭐ sys_notebooksコマンドがDiscord APIに登録されています！")
                         else:
-                            logger.warning("⚠️ 同期後もコマンドが0個です。同期が失敗している可能性があります。")
+                            logger.error("="*60)
+                            logger.error("❌ 同期後もコマンドが0個です。同期が失敗しています。")
+                            logger.error("❌ 考えられる原因:")
+                            logger.error("   1. Botに'applications.commands'スコープの権限がない")
+                            logger.error("   2. Botがギルドに追加されていない")
+                            logger.error("   3. Application IDが設定されていない")
+                            logger.error("="*60)
+                    except discord.Forbidden as fetch_error:
+                        logger.error(f"❌ 同期後コマンドの取得に失敗: Botに'applications.commands'スコープの権限がありません")
+                        logger.error(f"❌ Discord Developer PortalでBotを確認してください")
                     except Exception as fetch_error:
                         logger.warning(f"⚠️ 同期後コマンドの取得に失敗: {fetch_error}")
                     
@@ -96,7 +119,11 @@ class WinglishBot(commands.Bot):
                     if len(synced_commands) == 0 and len(commands_before) > 0:
                         logger.warning("⚠️ 警告: 同期対象のコマンドがあるのに、Discord返り値が空です")
                         logger.warning("⚠️ これは、Discord APIへの同期が実際には失敗している可能性があります")
-                        logger.warning("⚠️ しかし、既存コマンドを更新する場合は空が返されることもあります")
+                except discord.Forbidden as sync_error:
+                    logger.error(f"❌ スラッシュコマンド同期に失敗: Botに'applications.commands'スコープの権限がありません")
+                    logger.error(f"❌ Discord Developer Portalで、Bot > OAuth2 > URL Generator で 'applications.commands' スコープを追加してください")
+                    logger.error(f"❌ または、Bot > Settings > Privileged Gateway Intents で必要な権限を有効化してください")
+                    raise
                 except discord.HTTPException as sync_error:
                     logger.error(f"❌ スラッシュコマンド同期中にHTTPエラー: {sync_error.status} - {sync_error.text}")
                     logger.error(f"❌ エラー詳細: {sync_error}")
