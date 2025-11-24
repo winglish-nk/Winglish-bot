@@ -289,6 +289,7 @@ Winglish-bot/
 - [vocabulary-selection-and-system-notebooks.md](docs/guides/vocabulary-selection-and-system-notebooks.md) - **🔍 単語選択機能とシステム推奨単語帳：検索方法とターゲット1900など**
 - [testing-notebook-feature.md](docs/guides/testing-notebook-feature.md) - **🧪 単語帳機能のテスト手順：Phase 1の動作確認方法**
 - [troubleshooting-slash-commands.md](docs/guides/troubleshooting-slash-commands.md) - **🔧 スラッシュコマンドが表示されない場合の対処法**
+- [checking-railway-logs.md](docs/guides/checking-railway-logs.md) - **📊 Railwayのログ確認方法：起動ログやエラーログの見つけ方**
 - [user-problem-analysis.md](docs/guides/user-problem-analysis.md) - **🤔 ユーザー課題分析：単語帳機能は本当に必要なのか？**
 - [system-notebooks-data-source.md](docs/guides/system-notebooks-data-source.md) - **📊 システム推奨単語帳のデータソース：既存NGSLデータを使用**
 - [vocabulary-vs-notebook-explanation.md](docs/guides/vocabulary-vs-notebook-explanation.md) - **🔍 単語と単語帳の違い：概念的な説明**
