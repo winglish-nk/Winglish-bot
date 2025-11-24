@@ -28,7 +28,7 @@ Discord 環境でも利用できるように再設計したものです。
 - 任意：VSCode + Poetry or venv
 
 ```bash
-git clone https://github.com/<yourname>/Winglish-bot.git
+git clone https://github.com/winglish-nk/Winglish-bot.git
 cd Winglish-bot
 python -m venv .venv
 # Windows
@@ -42,31 +42,39 @@ pip install -r requirements.txt
 
 ### 2. `.env` 設定
 
+`.env` ファイルを作成し、以下の環境変数を設定してください：
+
 ```dotenv
 # Discord
 DISCORD_TOKEN=あなたのBotトークン
-TEST_GUILD_ID=テスト用サーバーID
+TEST_GUILD_ID=テスト用サーバーID（オプション）
 
 # Database
-DATABASE_PUBLIC_URL=
-PGHOST=
-PGPORT=
-PGUSER=
-PGPASSWORD=
-PGDATABASE=
+DATABASE_PUBLIC_URL=postgresql://user:password@host:port/database
+# または個別設定
+# PGHOST=
+# PGPORT=
+# PGUSER=
+# PGPASSWORD=
+# PGDATABASE=
 
-# Data
-WORDS_CSV_PATH=data/All-words-modified_2025-10-29_08-31-22.csv
-
-# Dify
-DIFY_API_KEY_QUESTION=
-DIFY_API_KEY_ANSWER=
+# Dify API
+DIFY_API_KEY_QUESTION=app-xxxxxxxx
+DIFY_API_KEY_ANSWER=app-yyyyyyyy
 DIFY_ENDPOINT_RUN=https://api.dify.ai/v1/workflows/run
+DIFY_ENDPOINT_CHAT=https://api.dify.ai/v1/chat-messages
+
+# Data（オプション）
+WORDS_CSV_PATH=data/All-words-modified_2025-10-29_08-31-22.csv
 ```
 
 > 🔒 **セキュリティ注意**  
-> BotトークンやAPIキーは `.env` と Railway Secrets のみに保存し、GitHubには絶対に公開しないでください。  
-> 公開リポジトリをそのまま利用する場合も、**各自の新しいBotを作成して運用**してください。
+> - BotトークンやAPIキーは `.env` と Railway Secrets のみに保存し、GitHubには絶対に公開しないでください
+> - `.env` ファイルは `.gitignore` に含まれているため、Gitにはコミットされません
+> - 公開リポジトリをそのまま利用する場合も、**各自の新しいBotを作成して運用**してください
+
+> ✅ **環境変数の自動検証**  
+> Bot起動時に必要な環境変数が設定されているか自動的にチェックします。設定が不足している場合は、起動時に分かりやすいエラーメッセージが表示されます。
 
 ---
 
@@ -90,18 +98,30 @@ python main.py
 
 Botが起動し、Discord 上に「Winglish」メニューが表示されればOKです。
 
+起動時に以下のようなログが表示されます：
+```
+2025-01-15 10:30:45 [INFO] winglish.db: ✅ データベース接続プールの初期化が完了しました
+2025-01-15 10:30:46 [INFO] winglish: ✅ データベース初期化完了
+2025-01-15 10:30:47 [INFO] winglish: ✅ Cog 読み込み完了: cogs.vocab
+...
+2025-01-15 10:30:48 [INFO] winglish: ✅ Logged in as Winglish Bot (123456789)
+```
+
 ---
 
-### 5. Railwayデプロイ（任意）
+### 5. Railwayデプロイ
 
 1. Railwayで新しいプロジェクトを作成  
-2. PostgreSQLアドオンを追加  
-3. Secrets に `.env` の値を登録  
-4. Deploy コマンド：  
-   ```
-   python main.py
-   ```
-5. Logs で `✅ Cog 読み込み完了` が出ればデプロイ成功
+2. GitHubリポジトリ（`winglish-nk/Winglish-bot`）を接続
+3. PostgreSQLアドオンを追加  
+4. **Variables** タブで環境変数を設定：
+   - `DISCORD_TOKEN`
+   - `DATABASE_PUBLIC_URL`（PostgreSQLアドオンを追加すると自動設定される）
+   - `DIFY_API_KEY_QUESTION`
+   - `DIFY_API_KEY_ANSWER`
+   - その他の環境変数
+5. デプロイが自動的に開始されます
+6. **Logs** タブで `✅ Cog 読み込み完了` が出ればデプロイ成功
 
 ---
 
@@ -110,10 +130,91 @@ Botが起動し、Discord 上に「Winglish」メニューが表示されればO
 | 機能 | コマンド / 操作 | 説明 |
 |------|------------------|------|
 | メニュー表示 | `/winglish menu` | 英単語・SVOCM・長文読解のメインメニューを表示 |
+| 開始 | `/start` | 個人鍵チャンネルにメニューを送信 |
 | 英単語 | 「英単語」ボタン | 10問テストを開始（SRS対応） |
 | 英文解釈 | 「SVOCM」ボタン | 文型入力モーダルが開く |
 | 長文読解 | 「長文読解」ボタン | 1問の長文を生成→4択×2設問を出題 |
-| 管理 | `/winglish reset / attach_menu / ping` | 管理用コマンド |
+| 管理 | `/winglish reset / attach_menu / ping / diag_vocab` | 管理用コマンド |
+
+---
+
+## テスト
+
+### テストの実行
+
+```bash
+# すべてのテストを実行
+pytest
+
+# カバレッジレポート付きで実行
+pytest --cov=. --cov-report=html
+
+# 特定のテストファイルを実行
+pytest tests/test_srs.py
+
+# 詳細な出力で実行
+pytest -v
+```
+
+### テストカバレッジ
+
+カバレッジレポートは `htmlcov/index.html` で確認できます。
+
+詳細は [tests/README.md](tests/README.md) を参照してください。
+
+---
+
+## 開発ガイド
+
+### データベース接続
+
+推奨される使用方法：
+
+```python
+from db import get_db_manager
+
+db_manager = get_db_manager()
+async with db_manager.acquire() as conn:
+    result = await conn.fetch("SELECT * FROM users WHERE user_id = $1", user_id)
+```
+
+詳細は [DB_USAGE_GUIDE.md](DB_USAGE_GUIDE.md) を参照してください。
+
+### エラーハンドリング
+
+統一されたエラーハンドリングを使用：
+
+```python
+from error_handler import ErrorHandler
+
+try:
+    # 処理
+except Exception as e:
+    await ErrorHandler.handle_interaction_error(
+        interaction,
+        e,
+        log_context="my_feature"
+    )
+```
+
+### 型ヒント
+
+すべての関数に型ヒントが追加されています。IDEの自動補完が効きます。
+
+---
+
+## 改善履歴
+
+### 最近の改善
+
+- ✅ **環境変数検証**: 起動時に必要な設定を自動チェック
+- ✅ **エラーハンドリング**: 統一されたエラー処理で安定性向上
+- ✅ **型ヒント**: コードの可読性と保守性向上
+- ✅ **データベース接続**: DatabaseManagerクラスで一元管理
+- ✅ **テストコード**: pytestによるテスト環境の構築
+- ✅ **ロギング**: 構造化されたログで問題の早期発見
+
+詳細は [IMPROVEMENTS_BENEFITS.md](IMPROVEMENTS_BENEFITS.md) を参照してください。
 
 ---
 
@@ -131,6 +232,42 @@ flowchart TD
 
 ---
 
+## 技術スタック
+
+- **Python 3.12+**
+- **discord.py 2.4.0** - Discord Botライブラリ
+- **asyncpg 0.29.0** - PostgreSQL非同期ドライバ
+- **PostgreSQL** - データベース
+- **Dify API** - AI出題・採点処理
+- **pytest** - テストフレームワーク
+
+---
+
+## プロジェクト構造
+
+```
+Winglish-bot/
+├── main.py                 # Botのエントリーポイント
+├── config.py              # 環境変数の管理と検証
+├── db.py                  # データベース接続管理（DatabaseManager）
+├── error_handler.py       # 統一されたエラーハンドリング
+├── srs.py                 # SRS（Spaced Repetition System）アルゴリズム
+├── utils.py               # ユーティリティ関数
+├── dify.py                # Dify API連携
+├── cogs/                  # Botコマンドと機能
+│   ├── vocab.py          # 英単語学習
+│   ├── svocm.py          # 英文解釈（SVOCM）
+│   ├── reading.py        # 長文読解
+│   ├── menu.py           # メインメニュー
+│   ├── onboarding.py     # オンボーディング
+│   └── admin.py          # 管理コマンド
+├── tests/                 # テストコード
+├── sql/                   # データベーススキーマ
+└── scripts/               # ユーティリティスクリプト
+```
+
+---
+
 ## 注意事項 / 開発方針
 
 - **新しいBotを作成してください。**  
@@ -143,7 +280,18 @@ flowchart TD
 
 ---
 
+## 関連ドキュメント
+
+- [DB_USAGE_GUIDE.md](DB_USAGE_GUIDE.md) - データベース接続の使用方法
+- [tests/README.md](tests/README.md) - テストの実行方法
+- [IMPROVEMENTS_BENEFITS.md](IMPROVEMENTS_BENEFITS.md) - 改善による効果の説明
+- [IMPROVEMENTS_EXAMPLES.md](IMPROVEMENTS_EXAMPLES.md) - 改善前後のコード比較
+- [EXPLANATION.md](EXPLANATION.md) - 環境変数とエラーハンドリングの説明
+
+---
+
 ## 🌟 開発者メモ
 
 - 作者：國政 蒼矢（Tokyo International Professional University of Technology）  
-- 環境：Windows 11 / Python 3.12 / Railway  
+- 環境：Windows 11 / Python 3.12 / Railway
+- リポジトリ：https://github.com/winglish-nk/Winglish-bot
