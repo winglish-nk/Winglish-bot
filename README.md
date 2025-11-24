@@ -286,7 +286,8 @@ Winglish-bot/
 ### ガイド類 (`docs/guides/`)
 - [mvp-scope.md](docs/guides/mvp-scope.md) - **🚀 MVP（最小実行可能製品）の範囲定義**
 - [vocabulary-notebook-feature.md](docs/guides/vocabulary-notebook-feature.md) - **📚 単語帳機能の設計：Discord上で単語帳を作成・管理**
-- [vocabulary-selection-and-system-notebooks.md](docs/guides/vocabulary-selection-and-system-notebooks.md) - **🔍 単語選択機能とシステム推奨単語帳：検索方法とターゲット1900など**
+- [create-system-notebooks.md](docs/guides/create-system-notebooks.md) - **⭐ システム推奨単語帳の作成方法：大学受験必須単語、NGSL Level 1, 2, 3**
+- [vocabulary-selection-and-system-notebooks.md](docs/guides/vocabulary-selection-and-system-notebooks.md) - **🔍 単語選択機能とシステム推奨単語帳：検索方法と大学受験必須単語など**
 - [testing-notebook-feature.md](docs/guides/testing-notebook-feature.md) - **🧪 単語帳機能のテスト手順：Phase 1の動作確認方法**
 - [troubleshooting-slash-commands.md](docs/guides/troubleshooting-slash-commands.md) - **🔧 スラッシュコマンドが表示されない場合の対処法**
 - [checking-railway-logs.md](docs/guides/checking-railway-logs.md) - **📊 Railwayのログ確認方法：起動ログやエラーログの見つけ方**

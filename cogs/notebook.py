@@ -74,7 +74,7 @@ class Notebook(commands.Cog):
         description="自分の単語帳一覧を表示"
     )
     async def notebook_list(self, interaction: discord.Interaction) -> None:
-        """単語帳一覧を表示"""
+        """単語帳一覧を表示（ユーザー個人の単語帳のみ）"""
         user_id = str(interaction.user.id)
         
         try:
@@ -89,14 +89,15 @@ class Notebook(commands.Cog):
                         COUNT(nw.word_id) as word_count
                     FROM vocabulary_notebooks n
                     LEFT JOIN notebook_words nw ON n.notebook_id = nw.notebook_id
-                    WHERE n.user_id = $1
+                    WHERE n.user_id = $1 AND n.is_system = FALSE
                     GROUP BY n.notebook_id, n.name, n.description, n.is_auto
                     ORDER BY n.created_at DESC
                 """, user_id)
             
             if not notebooks:
                 await interaction.response.send_message(
-                    "📚 単語帳がまだありません。`/notebook_create` で作成しましょう！",
+                    "📚 単語帳がまだありません。`/notebook_create` で作成しましょう！\n"
+                    "または `/notebook_list_system` でシステム推奨単語帳を確認できます。",
                     ephemeral=True
                 )
                 return
@@ -124,6 +125,61 @@ class Notebook(commands.Cog):
                 interaction,
                 e,
                 log_context="notebook.notebook_list"
+            )
+
+    @discord.app_commands.command(
+        name="notebook_list_system",
+        description="システム推奨単語帳の一覧を表示"
+    )
+    async def notebook_list_system(self, interaction: discord.Interaction) -> None:
+        """システム推奨単語帳一覧を表示"""
+        try:
+            db_manager = get_db_manager()
+            async with db_manager.acquire() as conn:
+                notebooks = await conn.fetch("""
+                    SELECT 
+                        n.notebook_id,
+                        n.name,
+                        n.description,
+                        COUNT(snw.word_id) as word_count
+                    FROM vocabulary_notebooks n
+                    LEFT JOIN system_notebook_words snw ON n.notebook_id = snw.notebook_id
+                    WHERE n.is_system = TRUE
+                    GROUP BY n.notebook_id, n.name, n.description
+                    ORDER BY n.created_at DESC
+                """)
+            
+            if not notebooks:
+                await interaction.response.send_message(
+                    "📚 システム推奨単語帳がまだありません。",
+                    ephemeral=True
+                )
+                return
+            
+            # Embedで表示
+            embed = discord.Embed(
+                title="📚 システム推奨単語帳",
+                description="全ユーザーが利用できる標準的な単語帳です。",
+                color=0x2b90d9
+            )
+            
+            for i, nb in enumerate(notebooks, 1):
+                value = f"{nb['word_count']}語"
+                if nb['description']:
+                    value += f"\n{nb['description']}"
+                embed.add_field(
+                    name=f"{i}. ⭐ {nb['name']}",
+                    value=value,
+                    inline=False
+                )
+            
+            embed.set_footer(text="💡 /notebook_study で学習できます")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        except Exception as e:
+            await ErrorHandler.handle_interaction_error(
+                interaction,
+                e,
+                log_context="notebook.notebook_list_system"
             )
 
     @discord.app_commands.command(
@@ -332,7 +388,7 @@ class Notebook(commands.Cog):
         interaction: discord.Interaction,
         notebook_name: str
     ) -> None:
-        """単語帳から学習を開始"""
+        """単語帳から学習を開始（システム推奨単語帳も含む）"""
         user_id = str(interaction.user.id)
         
         try:
@@ -340,11 +396,16 @@ class Notebook(commands.Cog):
             
             db_manager = get_db_manager()
             async with db_manager.acquire() as conn:
-                # 単語帳を取得
+                # 単語帳を取得（システム推奨もユーザー個人のも含む）
                 notebook = await conn.fetchrow("""
-                    SELECT notebook_id, name FROM vocabulary_notebooks 
-                    WHERE user_id = $1 AND name = $2
-                """, user_id, notebook_name)
+                    SELECT notebook_id, name, is_system 
+                    FROM vocabulary_notebooks 
+                    WHERE name = $1 
+                      AND (
+                          is_system = TRUE 
+                          OR user_id = $2
+                      )
+                """, notebook_name, user_id)
                 
                 if not notebook:
                     await interaction.followup.send(
@@ -353,15 +414,26 @@ class Notebook(commands.Cog):
                     )
                     return
                 
-                # 単語帳の単語を取得
-                words = await conn.fetch("""
-                    SELECT w.word_id, w.word, w.jp, w.pos, w.example_en, w.example_ja, w.synonyms, w.derived
-                    FROM notebook_words nw
-                    JOIN words w ON nw.word_id = w.word_id
-                    WHERE nw.notebook_id = $1
-                    ORDER BY random()
-                    LIMIT 20
-                """, notebook['notebook_id'])
+                # システム推奨単語帳の場合
+                if notebook['is_system']:
+                    words = await conn.fetch("""
+                        SELECT w.word_id, w.word, w.jp, w.pos, w.example_en, w.example_ja, w.synonyms, w.derived
+                        FROM system_notebook_words snw
+                        JOIN words w ON snw.word_id = w.word_id
+                        WHERE snw.notebook_id = $1
+                        ORDER BY snw.order_index, random()
+                        LIMIT 20
+                    """, notebook['notebook_id'])
+                else:
+                    # ユーザー個人の単語帳の場合
+                    words = await conn.fetch("""
+                        SELECT w.word_id, w.word, w.jp, w.pos, w.example_en, w.example_ja, w.synonyms, w.derived
+                        FROM notebook_words nw
+                        JOIN words w ON nw.word_id = w.word_id
+                        WHERE nw.notebook_id = $1
+                        ORDER BY random()
+                        LIMIT 20
+                    """, notebook['notebook_id'])
                 
                 if not words or len(words) < 1:
                     await interaction.followup.send(

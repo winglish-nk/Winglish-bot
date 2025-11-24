@@ -99,15 +99,22 @@ CREATE TABLE IF NOT EXISTS session_batches (
 -- 単語帳テーブル
 CREATE TABLE IF NOT EXISTS vocabulary_notebooks (
     notebook_id SERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL,
+    user_id TEXT,  -- NULLの場合はシステム推奨単語帳
     name TEXT NOT NULL,
     description TEXT,
     is_auto BOOLEAN DEFAULT FALSE,  -- 自動更新かどうか
     auto_type TEXT,  -- 'weak', 'review', etc.
+    is_system BOOLEAN DEFAULT FALSE,  -- システム推奨かどうか
+    system_type TEXT,  -- 'ngsl_level1', 'ngsl_level2', 'entrance_exam_essential', etc.
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(user_id, name)
+    CONSTRAINT unique_user_notebook UNIQUE(user_id, name)  -- ユーザーごとの単語帳名の一意性
 );
+
+-- システム推奨単語帳は名前でユニーク（部分一意インデックス）
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_system_notebook_name 
+    ON vocabulary_notebooks(name) 
+    WHERE is_system = TRUE;
 
 -- 単語帳-単語の関連テーブル
 CREATE TABLE IF NOT EXISTS notebook_words (
@@ -117,7 +124,18 @@ CREATE TABLE IF NOT EXISTS notebook_words (
     PRIMARY KEY(notebook_id, word_id)
 );
 
+-- システム推奨単語帳の単語（全ユーザー共通）
+CREATE TABLE IF NOT EXISTS system_notebook_words (
+    notebook_id INT NOT NULL REFERENCES vocabulary_notebooks(notebook_id) ON DELETE CASCADE,
+    word_id INT NOT NULL REFERENCES words(word_id) ON DELETE CASCADE,
+    order_index INT,  -- 学習順序
+    added_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY(notebook_id, word_id)
+);
+
 -- インデックス
 CREATE INDEX IF NOT EXISTS idx_notebook_words_notebook ON notebook_words(notebook_id);
 CREATE INDEX IF NOT EXISTS idx_notebook_words_word ON notebook_words(word_id);
 CREATE INDEX IF NOT EXISTS idx_vocabulary_notebooks_user ON vocabulary_notebooks(user_id);
+CREATE INDEX IF NOT EXISTS idx_system_notebook_words_notebook ON system_notebook_words(notebook_id);
+CREATE INDEX IF NOT EXISTS idx_system_notebook_words_word ON system_notebook_words(word_id);
