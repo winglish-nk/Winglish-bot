@@ -139,8 +139,17 @@ class WinglishBot(commands.Bot):
                     
                     # 同期が成功したかどうかを確認
                     if len(synced_commands) == 0 and len(commands_before) > 0:
-                        logger.warning("⚠️ 警告: 同期対象のコマンドがあるのに、Discord返り値が空です")
-                        logger.warning("⚠️ これは、Discord APIへの同期が実際には失敗している可能性があります")
+                        logger.error("="*60)
+                        logger.error("❌ 重大な問題: 同期が失敗しています")
+                        logger.error(f"❌ 同期対象: {len(commands_before)}個のコマンド")
+                        logger.error(f"❌ Discord返り値: {len(synced_commands)}個")
+                        logger.error(f"❌ Discord API確認結果: {len(after_sync_commands) if 'after_sync_commands' in locals() else 'N/A'}個")
+                        logger.error("="*60)
+                        logger.error("💡 解決方法:")
+                        logger.error("   1. Discord Developer PortalでBotを確認")
+                        logger.error("   2. Botに'applications.commands'スコープが付与されているか確認")
+                        logger.error("   3. Botをギルドに再追加（'applications.commands'スコープ付き）")
+                        logger.error("="*60)
                 except discord.Forbidden as sync_error:
                     logger.error(f"❌ スラッシュコマンド同期に失敗: Botに'applications.commands'スコープの権限がありません")
                     logger.error(f"❌ Discord Developer Portalで、Bot > OAuth2 > URL Generator で 'applications.commands' スコープを追加してください")
