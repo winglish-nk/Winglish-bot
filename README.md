@@ -285,6 +285,7 @@ Winglish-bot/
 
 ### ガイド類 (`docs/guides/`)
 - [university-entrance-exam-strategy.md](docs/guides/university-entrance-exam-strategy.md) - **🎯 大学受験専門化戦略：ターゲット明確化とコンテンツ再設計**
+- [past-questions-strategy.md](docs/guides/past-questions-strategy.md) - **⚠️ 過去問活用戦略：著作権を考慮したアプローチ**
 - [content-strategy.md](docs/guides/content-strategy.md) - ユーザー視点でのコンテンツ戦略とUX設計
 - [content-redesign.md](docs/guides/content-redesign.md) - コンテンツ再設計：現状コンテンツの評価と改善案
 - [environment-and-error-handling.md](docs/guides/environment-and-error-handling.md) - 環境変数管理とエラーハンドリングの詳細
