@@ -287,7 +287,9 @@ Winglish-bot/
 - [tests/README.md](tests/README.md) - テストの実行方法
 - [IMPROVEMENTS_BENEFITS.md](IMPROVEMENTS_BENEFITS.md) - 改善による効果の説明
 - [IMPROVEMENTS_EXAMPLES.md](IMPROVEMENTS_EXAMPLES.md) - 改善前後のコード比較
-- [EXPLANATION.md](EXPLANATION.md) - 環境変数とエラーハンドリングの説明
+- [docs/guides/environment-and-error-handling.md](docs/guides/environment-and-error-handling.md) - 環境変数管理とエラーハンドリングの詳細
+- [docs/guides/repository-migration.md](docs/guides/repository-migration.md) - リポジトリ移行とPAT利用の手順
+- [docs/guides/roadmap.md](docs/guides/roadmap.md) - 今後の改善アイデアと優先タスク
 
 ---
 
