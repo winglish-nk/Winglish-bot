@@ -48,7 +48,19 @@ class WinglishBot(commands.Bot):
         self.add_view(MenuView())
         logger.info("✅ 永続 View 登録完了")
         
+        # 注意: スラッシュコマンド同期は on_ready() で実行します
+        # Cogのコマンドが完全に登録された後に同期するためです
+
+    async def on_ready(self) -> None:
+        logger.info(f"✅ Logged in as {self.user} ({self.user.id})")
+        
         #--- スラッシュコマンド同期 ---
+        # on_ready()で実行することで、すべてのコマンド（Cog内のコマンド含む）が
+        # 完全に登録された後に同期できます
+        await self.sync_commands()
+    
+    async def sync_commands(self) -> None:
+        """スラッシュコマンドをDiscord APIと同期します"""
         try:
             logger.info("="*60)
             logger.info("🔄 スラッシュコマンド同期を開始します...")
@@ -150,24 +162,7 @@ class WinglishBot(commands.Bot):
                         logger.error("   2. Botに'applications.commands'スコープが付与されているか確認")
                         logger.error("   3. Botをギルドに再追加（'applications.commands'スコープ付き）")
                         logger.error("="*60)
-                except discord.Forbidden as sync_error:
-                    logger.error(f"❌ スラッシュコマンド同期に失敗: Botに'applications.commands'スコープの権限がありません")
-                    logger.error(f"❌ Discord Developer Portalで、Bot > OAuth2 > URL Generator で 'applications.commands' スコープを追加してください")
-                    logger.error(f"❌ または、Bot > Settings > Privileged Gateway Intents で必要な権限を有効化してください")
-                    raise
-                except discord.HTTPException as sync_error:
-                    logger.error(f"❌ スラッシュコマンド同期中にHTTPエラー: {sync_error.status} - {sync_error.text}")
-                    logger.error(f"❌ エラー詳細: {sync_error}")
-                    raise
-                except Exception as sync_error:
-                    logger.error(f"❌ スラッシュコマンド同期中に予期しないエラー: {sync_error}", exc_info=True)
-                    raise
-                
-                # tree.sync()の戻り値が空の場合があるため、同期前のコマンドリストを使用して確認
-                # 同期が成功していれば、同期前のコマンドがDiscordに登録されているはず
-                if commands_before:
-                    logger.info(f"📊 同期前に登録されていたコマンド数: {len(commands_before)}")
-                    
+                        
                     # sys_notebooksが含まれているか特別に確認
                     cmd_names_before = [cmd.name for cmd in commands_before]
                     if 'sys_notebooks' in cmd_names_before:
@@ -180,16 +175,19 @@ class WinglishBot(commands.Bot):
                         logger.warning("⚠️ sys_notebooksコマンドが同期対象に含まれていません")
                         logger.warning(f"同期対象のコマンド一覧: {', '.join(cmd_names_before)}")
                         logger.warning("="*60)
-                    
-                    # 同期されたコマンドが返された場合は表示
-                    if synced_commands:
-                        logger.info(f"📊 Discord APIから返された同期済みコマンド数: {len(synced_commands)}")
-                        for cmd in sorted(synced_commands, key=lambda x: x.name):
-                            logger.info(f"  📡 /{cmd.name} (Discord API返り値)")
-                    else:
-                        logger.info("ℹ️ tree.sync()の戻り値が空です（既存コマンドの更新時によくある現象）")
-                else:
-                    logger.warning("⚠️ 同期前のコマンドが0個です")
+                        
+                except discord.Forbidden as sync_error:
+                    logger.error(f"❌ スラッシュコマンド同期に失敗: Botに'applications.commands'スコープの権限がありません")
+                    logger.error(f"❌ Discord Developer Portalで、Bot > OAuth2 > URL Generator で 'applications.commands' スコープを追加してください")
+                    logger.error(f"❌ または、Bot > Settings > Privileged Gateway Intents で必要な権限を有効化してください")
+                    raise
+                except discord.HTTPException as sync_error:
+                    logger.error(f"❌ スラッシュコマンド同期中にHTTPエラー: {sync_error.status} - {sync_error.text}")
+                    logger.error(f"❌ エラー詳細: {sync_error}")
+                    raise
+                except Exception as sync_error:
+                    logger.error(f"❌ スラッシュコマンド同期中に予期しないエラー: {sync_error}", exc_info=True)
+                    raise
             else:
                 logger.info("📡 グローバル同期します...")
                 synced_commands = await self.tree.sync()
@@ -204,9 +202,8 @@ class WinglishBot(commands.Bot):
             logger.error(f"❌ スラッシュコマンド同期失敗 (HTTP {e.status}): {e.text}", exc_info=True)
         except Exception as e:
             logger.error(f"❌ スラッシュコマンド同期失敗: {e}", exc_info=True)
-
-    async def on_ready(self) -> None:
-        logger.info(f"✅ Logged in as {self.user} ({self.user.id})")
+        finally:
+            logger.info("="*60)
 
     async def on_error(self, event_method: str, *args: Any, **kwargs: Any) -> None:
         logger.exception(f"⚠️ イベントエラー ({event_method})")
