@@ -2,7 +2,7 @@
 
 ## 🎯 概要
 
-ユーザーが単語を選ぶ方法と、システムが推奨する標準的な単語帳（「ターゲット1900」的なもの）を提供する機能の設計。
+ユーザーが単語を選ぶ方法と、システムが推奨する標準的な単語帳（「大学受験必須単語」など）を提供する機能の設計。
 
 ---
 
@@ -291,7 +291,7 @@ async def notebook_add(
 
 ---
 
-## 2. システム推奨単語帳（「ターゲット1900」的なもの）
+## 2. システム推奨単語帳（「大学受験必須単語」など）
 
 ### 💡 システム推奨単語帳とは
 
@@ -301,7 +301,7 @@ async def notebook_add(
 - 「NGSL Level 1」（wordsテーブルのlevel=1から選ぶ）
 - 「NGSL Level 2」（wordsテーブルのlevel=2から選ぶ）
 - 「NGSL Level 3」（wordsテーブルのlevel=3から選ぶ）
-- 「ターゲット1900」（既存のNGSLデータから1900語を選ぶ。イメージ名）
+- 「大学受験必須単語」（level 3以上の全単語：高校単語・入試必須）
 
 **重要な前提:**
 - ✅ **既存のwordsテーブル（NGSLの3800語）から単語を選ぶ**
@@ -312,7 +312,7 @@ async def notebook_add(
 - ✅ ユーザーは「この単語帳をフォローする」だけで使える
 
 **注意:**
-- 「ターゲット1900」という名前は**イメージ**で、実際には既存のNGSLデータから適切に選んだ単語帳
+- 「大学受験必須単語」はlevel 3以上の全単語を含む（高校単語・入試必須）
 - 新しい単語データは追加しない（wordsテーブルにある3800語のみを使用）
 
 ---
@@ -329,7 +329,7 @@ CREATE TABLE IF NOT EXISTS vocabulary_notebooks (
     is_auto BOOLEAN DEFAULT FALSE,
     auto_type TEXT,
     is_system BOOLEAN DEFAULT FALSE,  -- システム推奨かどうか
-    system_type TEXT,  -- 'ngsl_level1', 'ngsl_level2', 'target1900', etc.
+    system_type TEXT,  -- 'ngsl_level1', 'ngsl_level2', 'entrance_exam_essential', etc.
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id, name)  -- user_idがNULLの場合はシステム推奨として一意
@@ -369,7 +369,7 @@ INSERT INTO vocabulary_notebooks (user_id, name, description, is_system, system_
 VALUES (NULL, 'NGSL Level 1', 'NGSL最頻出語（約1000語）', TRUE, 'ngsl_level1');
 
 INSERT INTO vocabulary_notebooks (user_id, name, description, is_system, system_type)
-VALUES (NULL, 'ターゲット1900', '大学受験頻出語1900語', TRUE, 'target1900');
+VALUES (NULL, '大学受験必須単語', '大学受験に必要な高校単語・入試必須語', TRUE, 'entrance_exam_essential');
 
 -- システム推奨単語帳に単語を追加
 INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
@@ -401,7 +401,7 @@ VALUES ('user123', 1);
    中級者向けの重要語
    [フォローする] [学習する]
 
-3. 📖 ターゲット1900 (1900語) ⭐
+3. 📖 大学受験必須単語 (1300語) ⭐
    大学受験頻出語
    [フォローする] [学習する]
 ```
@@ -606,29 +606,27 @@ async def create_system_notebooks():
             ORDER BY word_id
         """, notebook_id_2)
         
-        # 「ターゲット1900」を作成（既存のNGSLデータから1900語を選ぶ。イメージ名）
-        # 例: level 1と2を組み合わせて1900語
+        # 「大学受験必須単語」を作成（level 3以上の全単語：高校単語・入試必須）
         notebook_id_target = await conn.fetchval("""
             INSERT INTO vocabulary_notebooks (user_id, name, description, is_system, system_type)
-            VALUES (NULL, 'ターゲット1900', '大学受験頻出語（既存NGSLデータから1900語を選択）', TRUE, 'target1900')
+            VALUES (NULL, '大学受験必須単語', '大学受験に必要な高校単語・入試必須語（level 3以上から選択）', TRUE, 'entrance_exam_essential')
             RETURNING notebook_id
         """)
         
-        # 既存のwordsテーブルから1900語を選ぶ（level順に）
+        # 既存のwordsテーブルからlevel 3以上の全単語を選ぶ
         await conn.execute("""
             INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
             SELECT $1, word_id, row_number() OVER (ORDER BY level, word_id) as order_index
             FROM words 
-            WHERE level IN (1, 2)  -- または適切な条件で選ぶ
+            WHERE level >= 3  -- 高校単語・入試必須
             ORDER BY level, word_id
-            LIMIT 1900
         """, notebook_id_target)
         
         # 実際の単語数を確認
         count = await conn.fetchval("""
             SELECT COUNT(*) FROM system_notebook_words WHERE notebook_id = $1
         """, notebook_id_target)
-        print(f"✅ 「ターゲット1900」に{count}語を追加しました（既存のwordsテーブルから）")
+        print(f"✅ 「大学受験必須単語」に{count}語を追加しました（既存のwordsテーブルから）")
     
     print("✅ システム推奨単語帳を作成しました（既存のNGSLデータを使用）")
 ```
@@ -644,7 +642,7 @@ async def create_system_notebooks():
 
 ### システム推奨単語帳
 1. **NGSL Level 1, 2, 3** などの標準的な単語帳
-2. **ターゲット1900** などの大学受験向け単語帳
+2. **大学受験必須単語** などの大学受験向け単語帳
 3. ユーザーが「フォロー」して利用
 4. 全ユーザーに同じ単語帳を提供
 

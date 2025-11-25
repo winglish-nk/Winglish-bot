@@ -49,10 +49,10 @@ CREATE TABLE words (
 
 ## 📚 システム推奨単語帳の例
 
-### 1. NGSL Level 1
+### 1. 中学英単語 Level 1
 
 ```sql
--- wordsテーブルのlevel=1から全ての単語を選ぶ
+-- wordsテーブルのlevel=1から全ての単語を選ぶ（中学英単語）
 INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
 SELECT $1, word_id, row_number() OVER (ORDER BY word_id) as order_index
 FROM words 
@@ -63,13 +63,14 @@ ORDER BY word_id
 **説明:**
 - wordsテーブルの`level = 1`の単語を全て選ぶ
 - 単語数は実際のデータに依存（例: 1000語）
+- **分類**: 中学英単語
 
 ---
 
-### 2. NGSL Level 2
+### 2. 中学英単語 Level 2
 
 ```sql
--- wordsテーブルのlevel=2から全ての単語を選ぶ
+-- wordsテーブルのlevel=2から全ての単語を選ぶ（中学英単語）
 INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
 SELECT $1, word_id, row_number() OVER (ORDER BY word_id) as order_index
 FROM words 
@@ -77,26 +78,41 @@ WHERE level = 2
 ORDER BY word_id
 ```
 
+**分類**: 中学英単語
+
 ---
 
-### 3. 「ターゲット1900」（イメージ名）
-
-**注意: 「ターゲット1900」という名前はイメージで、既存のNGSLデータから1900語を選ぶ**
+### 3. 高校単語・入試必須 Level 3以上
 
 ```sql
--- 既存のwordsテーブルから1900語を選ぶ
--- 例: level 1と2を組み合わせて1900語
+-- wordsテーブルのlevel=3以上から全ての単語を選ぶ（高校単語・入試必須）
 INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
 SELECT $1, word_id, row_number() OVER (ORDER BY level, word_id) as order_index
 FROM words 
-WHERE level IN (1, 2)  -- または適切な条件
+WHERE level >= 3
 ORDER BY level, word_id
-LIMIT 1900
+```
+
+**分類**: 高校単語・入試必須
+
+---
+
+### 4. 「大学受験必須単語」
+
+**level 3以上（高校単語・入試必須）の全単語を含む**
+
+```sql
+-- 既存のwordsテーブルからlevel 3以上の全単語を選ぶ（高校単語・入試必須）
+INSERT INTO system_notebook_words (notebook_id, word_id, order_index)
+SELECT $1, word_id, row_number() OVER (ORDER BY level, word_id) as order_index
+FROM words 
+WHERE level >= 3  -- 高校単語・入試必須の全単語
+ORDER BY level, word_id
 ```
 
 **実際の選択方法:**
-- level 1と2を組み合わせる
-- または、level 1だけで1900語に達する場合はそれを使う
+- level 3以上（高校単語・入試必須）の全単語を含む
+- 大学受験に必要な単語を網羅
 - 実際の単語数は既存データに依存
 
 ---
@@ -147,9 +163,8 @@ WHERE level = 1
 
 ### 2. 単語数は実際のデータに依存
 
-- 「ターゲット1900」という名前はイメージ
-- 実際の単語数は既存データに依存（1900語に満たない場合もある）
-- 単語帳の説明に「約1900語」などと記載する
+- 実際の単語数は既存データに依存
+- 大学受験必須単語はlevel 3以上の全単語を含む
 
 ### 3. levelフィールドの値
 
@@ -200,7 +215,7 @@ async def check_words_data():
 
 ### 重要なポイント
 
-- 「ターゲット1900」という名前は**イメージ**で、実際には既存データから選ぶ
+- 「大学受験必須単語」はlevel 3以上の全単語を含む（高校単語・入試必須）
 - 新しい単語データは追加しない
 - 単語数は実際のデータに依存する
 

@@ -53,9 +53,29 @@ discord.gateway: Shard ID None has successfully RESUMED session
 
 #### Railwayでの再起動方法
 
+**方法1: 空のコミットをプッシュ（推奨）**
+
+空のコミットをプッシュすると、Railwayが自動的にデプロイを実行し、Botが再起動されます：
+
+```bash
+cd /tmp/Winglish-bot
+git commit --allow-empty -m "chore: Bot再起動のための空コミット"
+git push origin main
+```
+
+**方法2: デプロイメントを再デプロイ**
+
+1. RailwayダッシュボードでBotサービスを開く
+2. **「Deployments」タブ**を開く
+3. 最新のデプロイメントの**「...」メニュー**を開く
+4. **「Redeploy」**を選択
+5. 再デプロイが完了するまで待つ（1-2分）
+
+**方法3: Settingsタブから再起動（UIによっては表示されない場合がある）**
+
 1. RailwayダッシュボードでBotサービスを開く
 2. **「Settings」タブ**を開く
-3. 下の方に**「Restart」ボタン**があるので、クリック
+3. 下の方に**「Restart」ボタン**がある場合、クリック
 4. 再起動が完了するまで待つ（1-2分）
 
 #### 再起動後の確認
