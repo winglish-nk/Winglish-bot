@@ -54,6 +54,12 @@ class WinglishBot(commands.Bot):
     async def on_ready(self) -> None:
         logger.info(f"✅ Logged in as {self.user} ({self.user.id})")
         
+        # on_ready()の時点でコマンドが登録されているか確認
+        commands_at_ready = list(self.tree.get_commands())
+        logger.info(f"📊 on_ready()時点でのコマンド数: {len(commands_at_ready)}")
+        for cmd in sorted(commands_at_ready, key=lambda x: x.name):
+            logger.info(f"  - /{cmd.name} (on_ready時点)")
+        
         #--- スラッシュコマンド同期 ---
         # on_ready()で実行することで、すべてのコマンド（Cog内のコマンド含む）が
         # 完全に登録された後に同期できます
@@ -99,7 +105,9 @@ class WinglishBot(commands.Bot):
                     logger.info(f"🔄 コマンドを同期します... (ローカル: {len(commands_before)}個)")
                     
                     # 実際に同期を実行し、詳細なログを出力
+                    synced_commands: list[discord.app_commands.AppCommand] = []
                     try:
+                        logger.info(f"🔄 tree.sync()を実行します...")
                         synced_commands = await self.tree.sync(guild=guild)
                         logger.info(f"✅ tree.sync()完了（テストギルド: {TEST_GUILD_ID}）")
                         logger.info(f"📊 同期されたコマンド数（Discord返り値）: {len(synced_commands)}")
@@ -108,6 +116,9 @@ class WinglishBot(commands.Bot):
                             logger.info("✅ 同期が成功しました！以下のコマンドが同期されました:")
                             for cmd in sorted(synced_commands, key=lambda x: x.name):
                                 logger.info(f"  ✅ /{cmd.name}")
+                        else:
+                            logger.warning(f"⚠️ tree.sync()の戻り値が空です（既存コマンドの更新時によくある現象）")
+                            logger.warning(f"⚠️ しかし、これは正常な場合もあります（既存コマンドを更新する場合は空が返される）")
                         
                     except discord.app_commands.CommandSyncFailure as sync_failure:
                         logger.error(f"❌ コマンド同期失敗（CommandSyncFailure）: {sync_failure}")
